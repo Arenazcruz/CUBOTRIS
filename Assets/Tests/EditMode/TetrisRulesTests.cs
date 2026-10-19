@@ -14,6 +14,7 @@ namespace Cubotris.Tests
             private readonly TetrominoType[] types;
             public int Count { get; private set; }
             public Sequence(params TetrominoType[] types) { this.types = types; }
+            public TetrominoType Peek() => types[Count % types.Length];
             public TetrominoType Next() => types[Count++ % types.Length];
         }
 

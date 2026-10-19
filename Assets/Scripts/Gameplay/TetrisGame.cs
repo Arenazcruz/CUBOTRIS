@@ -35,6 +35,7 @@ namespace Cubotris.Gameplay
         public int Score { get; private set; }
         public int PiecesLocked { get; private set; }
         public int Revision { get; private set; }
+        public TetrominoType NextPiece => source.Peek();
         public float GravityInterval => Mathf.Max(0.01f, settings.minimumInterval,
             settings.initialInterval * Mathf.Pow(Mathf.Clamp(settings.speedMultiplier, 0.1f, 1f), LinesCleared / Mathf.Max(1, settings.linesPerStep)));
 
@@ -103,6 +104,15 @@ namespace Cubotris.Gameplay
                 // A newly spawned piece always receives its own full fall interval.
                 if (IsGameOver || PiecesLocked != lockedBefore) break;
             }
+        }
+
+        public ActivePiece? GetLandingPiece()
+        {
+            if (!HasActivePiece || IsGameOver) return null;
+            var position = Active.Position;
+            while (Board.CanPlace(TetrominoData.Cells(Active.Type, Active.Rotation, position + Vector2Int.down)))
+                position += Vector2Int.down;
+            return new ActivePiece(Active.Type, Active.Rotation, position);
         }
 
         private bool TryActive(int rotation, Vector2Int position)

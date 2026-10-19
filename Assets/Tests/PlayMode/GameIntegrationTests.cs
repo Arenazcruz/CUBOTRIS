@@ -722,7 +722,7 @@ namespace Cubotris.Tests
             Assert.That(game.Model.PiecesLocked, Is.Zero);
             Assert.That(game.Model.HasActivePiece, Is.True);
             Assert.That(board.transform.localPosition, Is.EqualTo(origin));
-            Assert.That(board.GetComponentsInChildren<SpriteRenderer>().All(r => r.color.a == 1), Is.True);
+            Assert.That(board.GetComponentsInChildren<SpriteRenderer>().Where(r => !r.transform.IsChildOf(board.transform.Find("GhostPieceRoot"))).All(r => r.color.a == 1), Is.True);
             Assert.That(Time.timeScale, Is.EqualTo(1));
             Assert.That(BestScoreStore.Best, Is.EqualTo(900));
         }
@@ -773,6 +773,145 @@ namespace Cubotris.Tests
             Assert.That(game.Model.Active.Position.y, Is.EqualTo(18));
         }
 
+        [UnityTest]
+        public IEnumerator NextPieceSpritesAndShapePredictTheNextSpawnAcrossAllFaces()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            var preview = GameObject.Find("GameCanvas/NextPiecePanel/PiecePreview").GetComponentsInChildren<Image>();
+            Assert.That(preview.Length, Is.EqualTo(4));
+            for (int face = 0; face < 8; face++)
+            {
+                var expected = game.Model.NextPiece;
+                var cells = TetrominoData.Cells(expected, 0, Vector2Int.zero);
+                for (int i = 0; i < 4; i++)
+                {
+                    Assert.That(preview[i].enabled, Is.True);
+                    Assert.That(preview[i].sprite, Is.Not.Null);
+                    Assert.That(preview[i].rectTransform.anchoredPosition - preview[0].rectTransform.anchoredPosition,
+                        Is.EqualTo((Vector2)(cells[i] - cells[0]) * 42));
+                }
+                var sprite = preview[0].sprite;
+                game.HardDrop(); yield return Settled(game);
+                Assert.That(game.Model.Active.Type, Is.EqualTo(expected));
+                Assert.That(GameObject.Find("BoardRoot/ActivePieceRoot").GetComponentInChildren<SpriteRenderer>().sprite, Is.EqualTo(sprite));
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator MiniBoardsDrawExactLockedCellsAndOnlyRebuildWhenTheirBoardChanges()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            var overview = GameObject.Find("GameCanvas/FacesOverview").transform;
+            var minis = Enumerable.Range(1, 4).Select(i => overview.Find($"Face{i}/PlacedCells").GetComponent<MiniBoardView>()).ToArray();
+            for (int face = 0; face < 4; face++)
+            {
+                for (int i = 0; i < face; i++) game.Move(-1);
+                game.HardDrop(); yield return Settled(game);
+                for (int i = 0; i < 4; i++) AssertMini(minis[i], game.Session.Faces[i]);
+                Assert.That(overview.Find($"Face{game.Session.ActiveFace + 1}/Marker").GetComponent<Text>().text, Is.EqualTo("ACTUAL"));
+                int next = (game.Session.ActiveFace + 1) % 4;
+                Assert.That(overview.Find($"Face{next + 1}/Marker").GetComponent<Text>().text, Is.EqualTo("SIGUIENTE"));
+                Assert.That(GameObject.Find("GameCanvas/GameInfoPanel/NextFace").GetComponent<Text>().text, Is.EqualTo($"SIGUIENTE: {next + 1} / 4"));
+            }
+            var board = game.Session.Faces[2];
+            board.TryLock(TetrominoType.Z, Enumerable.Range(0, 10).Select(x => new Vector2Int(x, 4)).ToArray());
+            yield return null; yield return null; AssertMini(minis[2], board);
+            Assert.That(board.ClearFullRows(), Is.EqualTo(1));
+            yield return null; yield return null; AssertMini(minis[2], board);
+            int rebuilds = 0;
+            UnityEngine.Events.UnityAction dirty = () => rebuilds++;
+            foreach (var mini in minis) mini.RegisterDirtyVerticesCallback(dirty);
+            int objects = overview.GetComponentsInChildren<Transform>(true).Length;
+            game.Move(1); game.Rotate();
+            for (int i = 0; i < 15; i++) yield return null;
+            Assert.That(rebuilds, Is.Zero, "Unchanged mini boards must not rebuild for movement or gravity");
+            Assert.That(overview.GetComponentsInChildren<Transform>(true).Length, Is.EqualTo(objects));
+            foreach (var mini in minis) mini.UnregisterDirtyVerticesCallback(dirty);
+            Assert.That(overview.GetComponentsInChildren<Selectable>(true), Is.Empty);
+            Assert.That(overview.GetComponentsInChildren<Graphic>(true).All(g => !g.raycastTarget), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator GhostFollowsMovementRotationAndDropButIsHiddenThroughoutTransition()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            var ghosts = GameObject.Find("BoardRoot/GhostPieceRoot").GetComponentsInChildren<SpriteRenderer>();
+            Assert.That(ghosts.Length, Is.EqualTo(4));
+            AssertGhost(game, ghosts);
+            game.Move(-1); yield return null; yield return null; AssertGhost(game, ghosts);
+            game.Rotate(); yield return null; yield return null; AssertGhost(game, ghosts);
+            yield return Tap(Key.DownArrow); AssertGhost(game, ghosts);
+            yield return Tap(Key.Escape);
+            var frozen = ghosts.Select(r => r.transform.localPosition).ToArray();
+            yield return new WaitForSecondsRealtime(0.2f);
+            CollectionAssert.AreEqual(frozen, ghosts.Select(r => r.transform.localPosition).ToArray());
+            yield return Tap(Key.Escape);
+            game.HardDrop();
+            Assert.That(ghosts.All(r => !r.enabled), Is.True, "Lock must hide the projection immediately");
+            float deadline = Time.realtimeSinceStartup + 2;
+            while (game.IsTransitioning && Time.realtimeSinceStartup < deadline)
+            {
+                Assert.That(ghosts.All(r => !r.enabled), Is.True, "Incoming board must not show a ghost mid-animation");
+                yield return null;
+            }
+            yield return Settled(game); AssertGhost(game, ghosts);
+        }
+
+        [UnityTest]
+        public IEnumerator PauseRestartAndGameOverKeepHudCoherentAndNonInteractive()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            var overview = GameObject.Find("GameCanvas/FacesOverview").transform;
+            var minis = Enumerable.Range(1, 4).Select(i => overview.Find($"Face{i}/PlacedCells").GetComponent<MiniBoardView>()).ToArray();
+            var preview = GameObject.Find("GameCanvas/NextPiecePanel").transform;
+            Assert.That(preview.GetComponentsInChildren<Selectable>(true), Is.Empty);
+            Assert.That(preview.GetComponentsInChildren<Graphic>(true).All(g => !g.raycastTarget), Is.True);
+            for (int i = 0; i < 4; i++) { game.HardDrop(); yield return Settled(game); }
+            yield return Tap(Key.Escape);
+            int revision = game.Model.Revision;
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            for (int i = 0; i < 4; i++) AssertMini(minis[i], game.Session.Faces[i]);
+            ButtonAt("PausePanel/PanelBackground/RestartButton").onClick.Invoke(); yield return null; yield return null;
+            for (int i = 0; i < 4; i++) { Assert.That(Occupied(game.Session.Faces[i]), Is.Zero); AssertMini(minis[i], game.Session.Faces[i]); }
+            Assert.That(overview.Find("Face1/Marker").GetComponent<Text>().text, Is.EqualTo("ACTUAL"));
+            Assert.That(preview.Find("PiecePreview").GetComponentsInChildren<Image>().All(i => i.enabled), Is.True);
+            yield return LoseGame(game);
+            for (int i = 0; i < 4; i++) AssertMini(minis[i], game.Session.Faces[i]);
+            Assert.That(preview.Find("PiecePreview").GetComponentsInChildren<Image>().All(i => !i.enabled), Is.True);
+            Assert.That(GameObject.Find("BoardRoot/GhostPieceRoot").GetComponentsInChildren<SpriteRenderer>().All(r => !r.enabled), Is.True);
+            ButtonAt("GameOverNotice/PanelBackground/RetryButton").onClick.Invoke(); yield return null; yield return null;
+            for (int i = 0; i < 4; i++) AssertMini(minis[i], game.Session.Faces[i]);
+            AssertGhost(game, GameObject.Find("BoardRoot/GhostPieceRoot").GetComponentsInChildren<SpriteRenderer>());
+            Assert.That(preview.Find("PiecePreview").GetComponentsInChildren<Image>().All(i => i.enabled), Is.True);
+        }
+
+        private static void AssertMini(MiniBoardView mini, BoardState board)
+        {
+            Canvas.ForceUpdateCanvases();
+            var mesh = mini.canvasRenderer.GetMesh();
+            if (mesh == null) { Assert.That(Occupied(board), Is.Zero); return; }
+            Assert.That(mesh.vertexCount, Is.EqualTo(Occupied(board) * 4));
+            var vertices = mesh.vertices; var rect = mini.rectTransform.rect;
+            for (int i = 0; i < vertices.Length; i += 4)
+            {
+                var center = (vertices[i] + vertices[i + 1] + vertices[i + 2] + vertices[i + 3]) / 4;
+                int x = Mathf.FloorToInt((center.x - rect.xMin) * 10 / rect.width);
+                int y = Mathf.FloorToInt((center.y - rect.yMin) * 20 / rect.height);
+                Assert.That(board[x, y].HasValue, Is.True, $"Mini view has an unexpected cell at {x}, {y}");
+            }
+        }
+
+        private static void AssertGhost(GameController game, SpriteRenderer[] ghosts)
+        {
+            var landing = game.Model.GetLandingPiece().Value;
+            if (landing.Position == game.Model.Active.Position) { Assert.That(ghosts.All(r => !r.enabled), Is.True); return; }
+            Assert.That(ghosts.All(r => r.enabled && r.color.a >= 0.1f && r.color.a <= 0.5f), Is.True);
+            var rendered = ghosts.Select(r => new Vector2Int(Mathf.FloorToInt(r.transform.localPosition.x), Mathf.FloorToInt(r.transform.localPosition.y))).ToArray();
+            CollectionAssert.AreEquivalent(landing.Cells, rendered);
+            Assert.That(game.Model.Board.CanPlace(rendered), Is.True);
+        }
+
         private static IEnumerator Settled(GameController game)
         {
             float deadline = Time.realtimeSinceStartup + 2;
@@ -820,6 +959,7 @@ namespace Cubotris.Tests
         {
             private readonly TetrominoType type;
             public SinglePiece(TetrominoType type) { this.type = type; }
+            public TetrominoType Peek() => type;
             public TetrominoType Next() => type;
         }
         private static void CheckBounds(Transform root, Bounds area)

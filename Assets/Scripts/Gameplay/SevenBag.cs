@@ -4,6 +4,7 @@ namespace Cubotris.Gameplay
 {
     public interface IPieceSource
     {
+        TetrominoType Peek();
         TetrominoType Next();
     }
 
@@ -20,6 +21,13 @@ namespace Cubotris.Gameplay
 
         public TetrominoType Next()
         {
+            var next = Peek();
+            cursor++;
+            return next;
+        }
+
+        public TetrominoType Peek()
+        {
             if (cursor == bag.Length)
             {
                 for (int i = 0; i < bag.Length; i++) bag[i] = (TetrominoType)i;
@@ -30,7 +38,7 @@ namespace Cubotris.Gameplay
                 }
                 cursor = 0;
             }
-            return bag[cursor++];
+            return bag[cursor];
         }
     }
 }

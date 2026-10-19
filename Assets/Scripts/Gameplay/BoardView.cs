@@ -8,6 +8,8 @@ namespace Cubotris.Gameplay
         [SerializeField] private Transform activePieceRoot;
         [SerializeField] private Transform placedBlocksRoot;
         [SerializeField] private Sprite[] pieceSprites = new Sprite[7];
+        [SerializeField] private SpriteRenderer[] ghostBlocks = new SpriteRenderer[4];
+        [SerializeField, Range(0.1f, 0.5f)] private float ghostOpacity = 0.25f;
         [SerializeField, Range(0.5f, 1f)] private float blockFill = 0.96f;
 
         private readonly SpriteRenderer[] activeBlocks = new SpriteRenderer[4];
@@ -15,13 +17,25 @@ namespace Cubotris.Gameplay
         private int boardVersion = -1;
         private BoardState renderedBoard;
 
-        public void Render(TetrisGame game)
+        public void Render(TetrisGame game, bool showGhost = true)
         {
             Render(game.Board, game.HasActivePiece && !game.IsGameOver ? game.Active : (ActivePiece?)null);
+            var landing = showGhost ? game.GetLandingPiece() : null;
+            if (!landing.HasValue || landing.Value.Position == game.Active.Position) return;
+            var cells = landing.Value.Cells;
+            for (int i = 0; i < ghostBlocks.Length; i++)
+            {
+                var block = ghostBlocks[i];
+                if (block == null) continue;
+                SetBlock(block, landing.Value.Type, cells[i]);
+                block.color = new Color(0.85f, 0.95f, 1, ghostOpacity);
+                block.enabled = true;
+            }
         }
 
         public void Render(BoardState board, ActivePiece? active = null)
         {
+            foreach (var ghost in ghostBlocks) if (ghost != null) ghost.enabled = false;
             if (renderedBoard != board)
             {
                 renderedBoard = board;

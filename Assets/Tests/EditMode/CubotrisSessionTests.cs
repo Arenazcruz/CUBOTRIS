@@ -11,6 +11,7 @@ namespace Cubotris.Tests
             private readonly TetrominoType type;
             public int Count { get; private set; }
             public PieceSource(TetrominoType type = TetrominoType.O) { this.type = type; }
+            public TetrominoType Peek() => type;
             public TetrominoType Next() { Count++; return type; }
         }
         [Test]

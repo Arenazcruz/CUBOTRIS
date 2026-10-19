@@ -21,6 +21,7 @@ namespace Cubotris.Gameplay
         public int DisplayedFace { get; private set; }
         public float Progress => IsPlaying ? elapsed / Duration : 0;
         public float Duration => Mathf.Clamp(duration, 0.3f, 0.6f);
+        public Color FaceColor(int index) => faceColors[index];
         private Vector3 origin;
         private bool hasOrigin;
         private bool swapped;
@@ -34,9 +35,9 @@ namespace Cubotris.Gameplay
             elapsed = 0;
             session = value;
             boardView.transform.localPosition = origin;
+            SetOpacity(1);
             boardView.Render(value.Game);
             ApplyFace(value.ActiveFace);
-            SetOpacity(1);
         }
 
         public void Begin(CubotrisSession value, int previousFace)
@@ -62,7 +63,7 @@ namespace Cubotris.Gameplay
             if (!swapped && progress >= 0.5f)
             {
                 swapped = true;
-                boardView.Render(session.Game);
+                boardView.Render(session.Game, showGhost: false);
                 ApplyFace(session.ActiveFace);
             }
             float phase = progress < 0.5f ? progress * 2 : (progress - 0.5f) * 2;
