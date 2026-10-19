@@ -17,18 +17,23 @@ namespace Cubotris.Gameplay
 
         public void Render(TetrisGame game)
         {
-            if (renderedBoard != game.Board)
+            Render(game.Board, game.HasActivePiece && !game.IsGameOver ? game.Active : (ActivePiece?)null);
+        }
+
+        public void Render(BoardState board, ActivePiece? active = null)
+        {
+            if (renderedBoard != board)
             {
-                renderedBoard = game.Board;
+                renderedBoard = board;
                 boardVersion = -1;
             }
-            if (placedBlocks == null) placedBlocks = new SpriteRenderer[game.Board.Width, game.Board.Height];
-            if (boardVersion != game.Board.Version)
+            if (placedBlocks == null) placedBlocks = new SpriteRenderer[board.Width, board.Height];
+            if (boardVersion != board.Version)
             {
-                for (int y = 0; y < game.Board.Height; y++)
-                    for (int x = 0; x < game.Board.Width; x++)
+                for (int y = 0; y < board.Height; y++)
+                    for (int x = 0; x < board.Width; x++)
                     {
-                        var type = game.Board[x, y];
+                        var type = board[x, y];
                         if (type.HasValue)
                         {
                             if (placedBlocks[x, y] == null) placedBlocks[x, y] = Instantiate(blockPrefab, placedBlocksRoot);
@@ -36,18 +41,20 @@ namespace Cubotris.Gameplay
                         }
                         else if (placedBlocks[x, y] != null)
                         {
-                            Destroy(placedBlocks[x, y].gameObject);
+                            placedBlocks[x, y].enabled = false;
+                            if (Application.isPlaying) Destroy(placedBlocks[x, y].gameObject);
+                            else DestroyImmediate(placedBlocks[x, y].gameObject);
                             placedBlocks[x, y] = null;
                         }
                     }
-                boardVersion = game.Board.Version;
+                boardVersion = board.Version;
             }
-            var positions = game.Active.Cells;
+            var positions = active?.Cells;
             for (int i = 0; i < 4; i++)
             {
                 if (activeBlocks[i] == null) activeBlocks[i] = Instantiate(blockPrefab, activePieceRoot);
-                activeBlocks[i].enabled = game.HasActivePiece && !game.IsGameOver;
-                if (activeBlocks[i].enabled) SetBlock(activeBlocks[i], game.Active.Type, positions[i]);
+                activeBlocks[i].enabled = active.HasValue;
+                if (activeBlocks[i].enabled) SetBlock(activeBlocks[i], active.Value.Type, positions[i]);
             }
         }
 

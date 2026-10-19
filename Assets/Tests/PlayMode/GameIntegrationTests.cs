@@ -116,7 +116,8 @@ namespace Cubotris.Tests
             Assert.That(game.Model.PiecesLocked, Is.EqualTo(1));
             yield return new WaitForSeconds(0.2f);
             Assert.That(game.Model.PiecesLocked, Is.EqualTo(1));
-            Assert.That(GameObject.Find("BoardRoot/PlacedBlocksRoot").transform.childCount, Is.EqualTo(4));
+            Assert.That(Occupied(game.Session.Faces[0]), Is.EqualTo(4));
+            yield return Settled(game);
             Press(); yield return null; yield return null;
             Press(Key.Space); yield return null; yield return null;
             Assert.That(game.Model.PiecesLocked, Is.EqualTo(2));
@@ -126,7 +127,7 @@ namespace Cubotris.Tests
         public IEnumerator GameOverShowsNoticeAndPreventsFurtherInput()
         {
             var game = Object.FindAnyObjectByType<GameController>();
-            for (int i = 0; i < 25 && !game.Model.IsGameOver; i++) { game.HardDrop(); yield return null; }
+            yield return LoseGame(game);
             Assert.That(game.Model.IsGameOver, Is.True);
             Assert.That(GameObject.Find("GameCanvas/GameOverNotice"), Is.Not.Null);
             Assert.That(GameObject.Find("GameCanvas/GameInfoPanel/StateValue").GetComponent<Text>().text, Is.EqualTo("PARTIDA TERMINADA"));
@@ -248,7 +249,7 @@ namespace Cubotris.Tests
         public IEnumerator PauseButtonsResumeAndRestartWithoutDoubleTransitions()
         {
             var game = Object.FindAnyObjectByType<GameController>();
-            game.HardDrop(); yield return null;
+            game.HardDrop(); yield return Settled(game);
             var oldModel = game.Model;
             ButtonAt("PauseButton").onClick.Invoke(); yield return null;
             int revision = oldModel.Revision;
@@ -329,7 +330,7 @@ namespace Cubotris.Tests
                 for (int run = 1; run <= 2; run++)
                 {
                     game.Model.Board.TryLock(TetrominoType.I, Enumerable.Range(0, 10).Where(x => !game.Model.Board[x, 0].HasValue).Select(x => new Vector2Int(x, 0)).ToArray());
-                    game.HardDrop(); yield return null; yield return null;
+                    game.HardDrop(); yield return Settled(game);
                     Assert.That(game.Model.LinesCleared, Is.EqualTo(run));
                     Assert.That(game.Model.Score, Is.EqualTo(run * 100));
                     Assert.That(BestScoreStore.Best, Is.EqualTo(run * 100));
@@ -458,7 +459,7 @@ namespace Cubotris.Tests
             Press(Key.A); yield return null; yield return null;
             Assert.That(game.Model.Active.Position.x, Is.EqualTo(x - 1));
             Press(); yield return null; yield return null;
-            for (int i = 0; i < 25 && !game.Model.IsGameOver; i++) { game.HardDrop(); yield return null; }
+            yield return LoseGame(game);
             yield return null;
             Assert.That(game.Model.IsGameOver, Is.True);
             var retry = ButtonAt("GameOverNotice/PanelBackground/RetryButton");
@@ -472,9 +473,9 @@ namespace Cubotris.Tests
         private static IEnumerator FinishScoredGame(GameController game)
         {
             game.Model.Board.TryLock(TetrominoType.I, Enumerable.Range(0, 10).Select(x => new Vector2Int(x, 0)).ToArray());
-            game.HardDrop(); yield return null; yield return null;
+            game.HardDrop(); yield return Settled(game);
             Assert.That(game.Model.Score, Is.EqualTo(100));
-            for (int i = 0; i < 25 && !game.Model.IsGameOver; i++) { game.HardDrop(); yield return null; }
+            yield return LoseGame(game);
             yield return null; yield return null;
             Assert.That(game.Model.IsGameOver, Is.True);
         }
@@ -639,6 +640,156 @@ namespace Cubotris.Tests
             }
         }
 
+        [UnityTest]
+        public IEnumerator FourFaceCyclePreservesBlocksAndShowsOnePieceWithDistinctColors()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            var transition = Object.FindAnyObjectByType<FaceTransitionView>();
+            var board = Object.FindAnyObjectByType<BoardView>();
+            var active = board.transform.Find("ActivePieceRoot");
+            var placed = board.transform.Find("PlacedBlocksRoot");
+            var origin = board.transform.localPosition;
+            var colors = new Color[4];
+            var label = GameObject.Find("GameCanvas/GameInfoPanel/ActiveFace").GetComponent<Text>();
+            Assert.That(game.Session.ActiveFace, Is.Zero);
+            for (int face = 0; face < 4; face++)
+            {
+                colors[face] = label.color;
+                game.HardDrop();
+                Assert.That(game.IsTransitioning, Is.True);
+                Assert.That(game.Session.ActiveFace, Is.EqualTo((face + 1) % 4));
+                Assert.That(Occupied(game.Session.Faces[face]), Is.EqualTo(4));
+                Assert.That(active.GetComponentsInChildren<SpriteRenderer>().Count(r => r.enabled), Is.Zero);
+                yield return new WaitForSeconds(0.08f);
+                Assert.That(board.transform.localPosition, Is.Not.EqualTo(origin), "The board must visibly slide");
+                Assert.That(board.GetComponentsInChildren<SpriteRenderer>().Any(r => r.enabled && r.color.a > 0 && r.color.a < 1), Is.True, "The board must visibly fade");
+                float deadline = Time.realtimeSinceStartup + 2;
+                while (game.IsTransitioning && Time.realtimeSinceStartup < deadline)
+                {
+                    Assert.That(active.GetComponentsInChildren<SpriteRenderer>().Count(r => r.enabled), Is.LessThanOrEqualTo(4));
+                    Assert.That(Object.FindObjectsByType<BoardView>().Length, Is.EqualTo(1));
+                    yield return null;
+                }
+                yield return Settled(game);
+                Assert.That(transition.DisplayedFace, Is.EqualTo(game.Session.ActiveFace));
+                Assert.That(label.text, Is.EqualTo($"CARA {game.Session.ActiveFace + 1} / 4"));
+                Assert.That(board.transform.localPosition, Is.EqualTo(origin));
+                Assert.That(active.GetComponentsInChildren<SpriteRenderer>().Count(r => r.enabled), Is.EqualTo(4));
+                Assert.That(placed.GetComponentsInChildren<SpriteRenderer>().Count(r => r.enabled), Is.EqualTo(face == 3 ? 4 : 0));
+            }
+            Assert.That(colors.Distinct().Count(), Is.EqualTo(4));
+            Assert.That(game.Session.Faces.All(b => Occupied(b) == 4), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator PauseFreezesTransitionOptionsResumeItAndRestartClearsAllFaces()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            var transition = Object.FindAnyObjectByType<FaceTransitionView>();
+            var board = Object.FindAnyObjectByType<BoardView>();
+            var origin = board.transform.localPosition;
+            PlayerPrefs.SetInt(BestScoreStore.Key, 900); PlayerPrefs.Save();
+            for (int i = 0; i < 3; i++) { game.HardDrop(); yield return Settled(game); }
+            game.HardDrop(); yield return new WaitForSeconds(0.08f);
+            yield return Tap(Key.Escape);
+            Assert.That(game.IsPaused, Is.True);
+            float progress = transition.Progress;
+            var position = board.transform.localPosition;
+            int revision = game.Model.Revision;
+            Assert.That(progress, Is.InRange(0.01f, 0.99f));
+            yield return new WaitForSecondsRealtime(0.65f);
+            ButtonAt("PausePanel/PanelBackground/OptionsButton").onClick.Invoke(); yield return null;
+            Assert.That(GameObject.Find("GameCanvas/PauseOptionsPanel"), Is.Not.Null);
+            yield return Tap(Key.Escape);
+            Assert.That(transition.Progress, Is.EqualTo(progress));
+            Assert.That(board.transform.localPosition, Is.EqualTo(position));
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            Assert.That(Time.timeScale, Is.Zero);
+            ButtonAt("PausePanel/PanelBackground/ResumeButton").onClick.Invoke();
+            yield return Settled(game);
+            Assert.That(game.Session.ActiveFace, Is.Zero);
+            Assert.That(game.Session.Faces.All(b => Occupied(b) == 4), Is.True);
+            Assert.That(board.transform.localPosition, Is.EqualTo(origin));
+            game.HardDrop(); yield return new WaitForSeconds(0.08f);
+            yield return Tap(Key.Escape);
+            ButtonAt("PausePanel/PanelBackground/RestartButton").onClick.Invoke(); yield return null; yield return null;
+            Assert.That(game.IsTransitioning, Is.False);
+            Assert.That(game.IsPaused, Is.False);
+            Assert.That(game.Session.ActiveFace, Is.Zero);
+            Assert.That(game.Session.Faces.Sum(Occupied), Is.Zero);
+            Assert.That(game.Model.Score, Is.Zero);
+            Assert.That(game.Model.LinesCleared, Is.Zero);
+            Assert.That(game.Model.PiecesLocked, Is.Zero);
+            Assert.That(game.Model.HasActivePiece, Is.True);
+            Assert.That(board.transform.localPosition, Is.EqualTo(origin));
+            Assert.That(board.GetComponentsInChildren<SpriteRenderer>().All(r => r.color.a == 1), Is.True);
+            Assert.That(Time.timeScale, Is.EqualTo(1));
+            Assert.That(BestScoreStore.Best, Is.EqualTo(900));
+        }
+
+        [UnityTest]
+        public IEnumerator TransitionBlocksGravityAndHeldInputUntilKeysAreReleased()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            Press(Key.Space); yield return null; yield return null;
+            Assert.That(game.IsTransitioning, Is.True);
+            int revision = game.Model.Revision;
+            var spawn = game.Model.Active.Position;
+            Press(Key.Space, Key.LeftArrow, Key.UpArrow, Key.DownArrow);
+            game.Move(-1); game.Rotate(); game.HardDrop();
+            yield return new WaitForSeconds(0.2f);
+            Assert.That(game.IsTransitioning, Is.True);
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            Assert.That(game.AcceptsInput, Is.False);
+            yield return Settled(game);
+            yield return new WaitForSeconds(0.2f);
+            Assert.That(game.Model.PiecesLocked, Is.EqualTo(1));
+            Assert.That(game.Model.Active.Position, Is.EqualTo(spawn));
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            Press(); yield return null; yield return null;
+            Press(Key.Space); yield return null; yield return null;
+            Assert.That(game.Model.PiecesLocked, Is.EqualTo(2));
+            Assert.That(game.Session.ActiveFace, Is.EqualTo(2));
+        }
+
+        [UnityTest]
+        public IEnumerator GravityAndSoftDropLocksEachStartExactlyOneTransition()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            while (game.Model.Board.CanPlace(game.Model.Active.Cells.Select(c => c + Vector2Int.down).ToArray())) game.Model.StepDown();
+            float deadline = Time.realtimeSinceStartup + 2;
+            while (!game.IsTransitioning && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(game.IsTransitioning, Is.True, "Natural gravity must start the same transition as hard drop");
+            Assert.That(game.Model.PiecesLocked, Is.EqualTo(1));
+            Assert.That(game.Session.ActiveFace, Is.EqualTo(1));
+            yield return Settled(game);
+            while (game.Model.Board.CanPlace(game.Model.Active.Cells.Select(c => c + Vector2Int.down).ToArray())) game.Model.StepDown();
+            Press(Key.DownArrow); yield return null; yield return null;
+            Assert.That(game.IsTransitioning, Is.True, "A soft drop that reaches the floor must advance the face");
+            Assert.That(game.Model.PiecesLocked, Is.EqualTo(2));
+            Assert.That(game.Session.ActiveFace, Is.EqualTo(2));
+            yield return Settled(game);
+            Assert.That(game.Model.PiecesLocked, Is.EqualTo(2));
+            Assert.That(game.Model.Active.Position.y, Is.EqualTo(18));
+        }
+
+        private static IEnumerator Settled(GameController game)
+        {
+            float deadline = Time.realtimeSinceStartup + 2;
+            while (game.IsTransitioning && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(game.IsTransitioning, Is.False, "Transition must complete within two seconds");
+            yield return null; yield return null;
+        }
+        private static IEnumerator LoseGame(GameController game)
+        {
+            yield return Settled(game);
+            var target = game.Session.Faces[(game.Session.ActiveFace + 1) % 4];
+            var spawnZone = Enumerable.Range(3, 4).SelectMany(x => new[] { new Vector2Int(x, 18), new Vector2Int(x, 19) }).Where(c => !target[c.x, c.y].HasValue).ToArray();
+            target.TryLock(TetrominoType.Z, spawnZone);
+            game.HardDrop(); yield return null; yield return null;
+            Assert.That(game.Model.IsGameOver, Is.True);
+        }
+        private static int Occupied(BoardState board) => Enumerable.Range(0, 200).Count(i => board[i % 10, i / 10].HasValue);
         private static IEnumerator ClickSlider(Mouse mouse, Slider slider, float fraction)
         {
             Canvas.ForceUpdateCanvases();

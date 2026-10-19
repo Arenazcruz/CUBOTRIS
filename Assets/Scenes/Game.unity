@@ -1448,7 +1448,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
-  m_Color: {r: 0.4745098, g: 0.9019608, b: 0.7529412, a: 1}
+  m_Color: {r: 0.47, g: 0.9, b: 0.75, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1468,7 +1468,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: CARA 1
+  m_Text: CARA 1 / 4
 --- !u!222 &426248590
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2717,7 +2717,7 @@ SpriteRenderer:
   m_SortingOrder: 2
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 37a65a912cd2f134b854caed27194689, type: 3}
-  m_Color: {r: 0.4745098, g: 0.7176471, b: 0.7058824, a: 1}
+  m_Color: {r: 0.47, g: 0.9, b: 0.75, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 1
@@ -3282,7 +3282,7 @@ SpriteRenderer:
   m_SortingOrder: 2
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 37a65a912cd2f134b854caed27194689, type: 3}
-  m_Color: {r: 0.4745098, g: 0.7176471, b: 0.7058824, a: 1}
+  m_Color: {r: 0.47, g: 0.9, b: 0.75, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 1
@@ -3774,7 +3774,7 @@ SpriteRenderer:
   m_SortingOrder: 2
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 37a65a912cd2f134b854caed27194689, type: 3}
-  m_Color: {r: 0.4745098, g: 0.7176471, b: 0.7058824, a: 1}
+  m_Color: {r: 0.47, g: 0.9, b: 0.75, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 1
@@ -3974,7 +3974,7 @@ SpriteRenderer:
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 1731f596ae48d6f43b8b4da0f07bba11, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.894, g: 0.98, b: 0.95, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -5031,6 +5031,7 @@ GameObject:
   - component: {fileID: 1311251397}
   - component: {fileID: 1311251396}
   - component: {fileID: 1311251399}
+  - component: {fileID: 1311251400}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -5066,6 +5067,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Cubotris.Gameplay::Cubotris.Gameplay.GameController
   boardView: {fileID: 1615207296}
+  faceTransition: {fileID: 1311251400}
   linesText: {fileID: 83097012}
   stateText: {fileID: 1300461625}
   scoreText: {fileID: 1879577803}
@@ -5110,6 +5112,33 @@ MonoBehaviour:
   resumeButton: {fileID: 993952830}
   optionsButton: {fileID: 1448604398}
   firstOption: {fileID: 428953384}
+--- !u!114 &1311251400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1311251395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d70d9deddb49bef43ae14dace9745b11, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Cubotris.Gameplay::Cubotris.Gameplay.FaceTransitionView
+  boardView: {fileID: 1615207296}
+  frame:
+  - {fileID: 725023745}
+  - {fileID: 2031691187}
+  - {fileID: 1010998312}
+  - {fileID: 800654979}
+  grid: {fileID: 1026668368}
+  faceText: {fileID: 426248589}
+  duration: 0.45
+  slideDistance: 1.6
+  faceColors:
+  - {r: 0.47, g: 0.9, b: 0.75, a: 1}
+  - {r: 0.42, g: 0.75, b: 1, a: 1}
+  - {r: 0.76, g: 0.64, b: 1, a: 1}
+  - {r: 1, g: 0.74, b: 0.43, a: 1}
 --- !u!114 &1326629081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7462,7 +7491,7 @@ SpriteRenderer:
   m_SortingOrder: 2
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 37a65a912cd2f134b854caed27194689, type: 3}
-  m_Color: {r: 0.4745098, g: 0.7176471, b: 0.7058824, a: 1}
+  m_Color: {r: 0.47, g: 0.9, b: 0.75, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 1

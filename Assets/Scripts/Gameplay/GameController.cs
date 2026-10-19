@@ -6,16 +6,19 @@ namespace Cubotris.Gameplay
     public sealed class GameController : MonoBehaviour
     {
         [SerializeField] private BoardView boardView;
+        [SerializeField] private FaceTransitionView faceTransition;
         [SerializeField] private Text linesText;
         [SerializeField] private Text stateText;
         [SerializeField] private Text scoreText;
         [SerializeField] private GameObject gameOverNotice;
         [SerializeField] private FallSettings fallSettings = new FallSettings();
 
-        public TetrisGame Model { get; private set; }
+        public CubotrisSession Session { get; private set; }
+        public TetrisGame Model => Session?.Game;
         public bool IsPaused { get; private set; }
+        public bool IsTransitioning => faceTransition.IsPlaying;
         public int InputVersion { get; private set; }
-        public bool AcceptsInput => isActiveAndEnabled && Model != null && !Model.IsGameOver && !IsPaused && Time.frameCount != transitionFrame;
+        public bool AcceptsInput => isActiveAndEnabled && Model != null && !Model.IsGameOver && !IsPaused && !IsTransitioning && Time.frameCount != transitionFrame;
         public bool SoftDropHeld { get; set; }
         private int lastRevision = -1;
         private bool skipGravityOnce;
@@ -23,14 +26,26 @@ namespace Cubotris.Gameplay
 
         private void Start()
         {
-            Model = new TetrisGame(settings: fallSettings);
+            Session = new CubotrisSession(settings: fallSettings);
+            faceTransition.Show(Session);
             Refresh();
         }
 
         private void Update()
         {
+            if (IsTransitioning)
+            {
+                if (!IsPaused)
+                {
+                    faceTransition.Advance(Time.deltaTime);
+                    if (!IsTransitioning) { ResetInput(); lastRevision = -1; Refresh(); }
+                }
+                return;
+            }
+            int lockedBefore = Model.PiecesLocked;
             if (AcceptsInput && !skipGravityOnce) Model.Tick(Time.deltaTime, SoftDropHeld);
             skipGravityOnce = false;
+            HandlePlacement(lockedBefore);
             Refresh();
         }
 
@@ -39,8 +54,19 @@ namespace Cubotris.Gameplay
         public void HardDrop()
         {
             if (!AcceptsInput) return;
+            int lockedBefore = Model.PiecesLocked;
             Model.HardDrop();
+            HandlePlacement(lockedBefore);
             skipGravityOnce = true;
+        }
+
+        private void HandlePlacement(int lockedBefore)
+        {
+            if (Model.PiecesLocked == lockedBefore) return;
+            ResetInput();
+            if (Model.IsGameOver) faceTransition.Show(Session);
+            else faceTransition.Begin(Session, (Session.ActiveFace + CubotrisSession.FaceCount - 1) % CubotrisSession.FaceCount);
+            Refresh();
         }
 
         public void SetPaused(bool paused)
@@ -50,15 +76,17 @@ namespace Cubotris.Gameplay
             IsPaused = paused;
             Time.timeScale = paused ? 0 : 1;
             ResetInput();
-            stateText.text = paused ? "EN PAUSA" : "EN JUEGO";
+            stateText.text = paused ? "EN PAUSA" : IsTransitioning ? "CAMBIANDO CARA" : "EN JUEGO";
         }
 
         public void Restart()
         {
             SaveRecord();
-            Model = new TetrisGame(settings: fallSettings);
+            Session = new CubotrisSession(settings: fallSettings);
+            faceTransition.Show(Session);
             IsPaused = false;
             Time.timeScale = 1;
+            skipGravityOnce = false;
             ResetInput();
             lastRevision = -1;
             Refresh();
@@ -79,11 +107,11 @@ namespace Cubotris.Gameplay
         private void Refresh()
         {
             if (lastRevision == Model.Revision) return;
-            boardView.Render(Model);
+            if (!IsTransitioning) boardView.Render(Model);
             SaveRecord();
             linesText.text = Model.LinesCleared.ToString("00");
             scoreText.text = Model.Score.ToString();
-            stateText.text = Model.IsGameOver ? "PARTIDA TERMINADA" : IsPaused ? "EN PAUSA" : "EN JUEGO";
+            stateText.text = Model.IsGameOver ? "PARTIDA TERMINADA" : IsPaused ? "EN PAUSA" : IsTransitioning ? "CAMBIANDO CARA" : "EN JUEGO";
             gameOverNotice.SetActive(Model.IsGameOver);
             lastRevision = Model.Revision;
         }

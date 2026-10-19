@@ -23,10 +23,11 @@ namespace Cubotris.Gameplay
         };
         private readonly IPieceSource source;
         private readonly FallSettings settings;
+        private readonly Func<BoardState> nextBoard;
         private float fallTime;
         private bool wasSoftDropping;
 
-        public BoardState Board { get; }
+        public BoardState Board { get; private set; }
         public ActivePiece Active { get; private set; }
         public bool HasActivePiece { get; private set; }
         public bool IsGameOver { get; private set; }
@@ -37,11 +38,12 @@ namespace Cubotris.Gameplay
         public float GravityInterval => Mathf.Max(0.01f, settings.minimumInterval,
             settings.initialInterval * Mathf.Pow(Mathf.Clamp(settings.speedMultiplier, 0.1f, 1f), LinesCleared / Mathf.Max(1, settings.linesPerStep)));
 
-        public TetrisGame(BoardState board = null, IPieceSource source = null, FallSettings settings = null)
+        public TetrisGame(BoardState board = null, IPieceSource source = null, FallSettings settings = null, Func<BoardState> nextBoard = null)
         {
             Board = board ?? new BoardState();
             this.source = source ?? new SevenBag();
             this.settings = settings ?? new FallSettings();
+            this.nextBoard = nextBoard;
             Spawn();
         }
 
@@ -124,6 +126,7 @@ namespace Cubotris.Gameplay
             LinesCleared += cleared;
             Score += cleared switch { 1 => 100, 2 => 300, 3 => 500, 4 => 800, _ => 0 };
             fallTime = 0;
+            if (nextBoard != null) Board = nextBoard();
             Spawn();
         }
 
