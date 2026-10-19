@@ -1,0 +1,5 @@
+{
+  "name": "Cubotris.Gameplay",
+  "rootNamespace": "Cubotris.Gameplay",
+  "references": ["Unity.InputSystem", "Unity.ugui"]
+}

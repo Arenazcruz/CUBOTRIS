@@ -1,0 +1,6 @@
+{
+  "name": "Cubotris.EditModeTests",
+  "references": ["Cubotris.Gameplay"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

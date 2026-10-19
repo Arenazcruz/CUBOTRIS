@@ -1,11 +1,12 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Cubotris.UI
 {
-    /// <summary>Controls menu navigation and the placeholder Play notification.</summary>
+    /// <summary>Controls navigation between the main menu, options and the game.</summary>
     [DisallowMultipleComponent]
     public sealed class MainMenuController : MonoBehaviour
     {
@@ -34,7 +35,7 @@ namespace Cubotris.UI
 
         public void Play()
         {
-            ShowNotification("El juego se implementará próximamente.");
+            SceneManager.LoadScene("Game");
         }
 
         public void OpenOptions()
