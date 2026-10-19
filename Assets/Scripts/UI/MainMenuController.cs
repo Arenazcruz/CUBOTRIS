@@ -5,13 +5,17 @@ using UnityEngine.UI;
 
 namespace Cubotris.UI
 {
-    /// <summary>Controls the saved menu UI; future screens are deliberately not loaded yet.</summary>
+    /// <summary>Controls menu navigation and the placeholder Play notification.</summary>
     [DisallowMultipleComponent]
     public sealed class MainMenuController : MonoBehaviour
     {
         [SerializeField] private CanvasGroup notificationPanel;
         [SerializeField] private Text notificationText;
         [SerializeField] private Button firstButton;
+        [SerializeField] private GameObject optionsPanel;
+        [SerializeField] private GameObject[] mainMenuContent;
+        [SerializeField] private Selectable firstOption;
+        [SerializeField] private Button optionsButton;
         [SerializeField, Min(0.1f)] private float messageDuration = 3.5f;
         [SerializeField, Min(0.01f)] private float fadeDuration = 0.15f;
 
@@ -35,7 +39,31 @@ namespace Cubotris.UI
 
         public void OpenOptions()
         {
-            ShowNotification("Las opciones se implementarán en la siguiente fase.");
+            if (optionsPanel == null || optionsPanel.activeSelf)
+                return;
+
+            StopAllCoroutines();
+            notificationRoutine = null;
+            HideNotification();
+            foreach (var section in mainMenuContent)
+                section.SetActive(false);
+
+            optionsPanel.SetActive(true);
+            if (EventSystem.current != null && firstOption != null)
+                EventSystem.current.SetSelectedGameObject(firstOption.gameObject);
+        }
+
+        public void CloseOptions()
+        {
+            if (optionsPanel == null || !optionsPanel.activeSelf)
+                return;
+
+            optionsPanel.SetActive(false);
+            foreach (var section in mainMenuContent)
+                section.SetActive(true);
+
+            if (EventSystem.current != null && optionsButton != null)
+                EventSystem.current.SetSelectedGameObject(optionsButton.gameObject);
         }
 
         public void Exit()
