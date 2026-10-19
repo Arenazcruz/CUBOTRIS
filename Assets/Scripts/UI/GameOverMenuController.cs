@@ -11,6 +11,7 @@ namespace Cubotris.UI
         [SerializeField] private GameController game;
         [SerializeField] private Text finalScoreText;
         [SerializeField] private Text bestScoreText;
+        [SerializeField] private Text survivalTimeText;
         [SerializeField] private Button retryButton;
         [SerializeField] private Button mainMenuButton;
         private bool transitioning;
@@ -22,6 +23,7 @@ namespace Cubotris.UI
             game.SaveRecord();
             finalScoreText.text = game.Model.Score.ToString();
             bestScoreText.text = BestScoreStore.Best.ToString();
+            survivalTimeText.text = GameHudView.FormatTime(game.Session.SurvivalSeconds);
             transitioning = false;
             shownFrame = Time.frameCount;
             retryButton.interactable = true;

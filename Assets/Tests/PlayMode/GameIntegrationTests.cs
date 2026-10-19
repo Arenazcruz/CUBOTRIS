@@ -886,6 +886,169 @@ namespace Cubotris.Tests
             Assert.That(preview.Find("PiecePreview").GetComponentsInChildren<Image>().All(i => i.enabled), Is.True);
         }
 
+        [UnityTest]
+        public IEnumerator PlayableClocksFreezeInTransitionsPauseAndOptionsAndDoNotCountAFrameTwice()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            double start = game.Session.SurvivalSeconds;
+            yield return new WaitForSecondsRealtime(0.15f);
+            Assert.That(game.Session.SurvivalSeconds, Is.GreaterThan(start));
+            Assert.That(game.Session.FaceElapsedSeconds(0), Is.Zero);
+            double beforeDrop = game.Session.SurvivalSeconds;
+            game.HardDrop();
+            Assert.That(game.Session.SurvivalSeconds, Is.EqualTo(beforeDrop), "Update already counted this frame");
+            yield return new WaitForSecondsRealtime(0.15f);
+            Assert.That(game.IsTransitioning, Is.True);
+            Assert.That(game.Session.SurvivalSeconds, Is.EqualTo(beforeDrop));
+            Assert.That(game.Session.FaceElapsedSeconds(1), Is.Zero);
+            yield return Settled(game);
+            yield return new WaitForSecondsRealtime(0.15f);
+            Assert.That(game.Session.FaceElapsedSeconds(1), Is.GreaterThan(0));
+            yield return Tap(Key.Escape);
+            double paused = game.Session.SurvivalSeconds;
+            double faceTime = game.Session.FaceElapsedSeconds(1);
+            yield return new WaitForSecondsRealtime(0.2f);
+            ButtonAt("PausePanel/PanelBackground/OptionsButton").onClick.Invoke();
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(GameObject.Find("GameCanvas/PauseOptionsPanel"), Is.Not.Null);
+            Assert.That(game.Session.SurvivalSeconds, Is.EqualTo(paused));
+            Assert.That(game.Session.FaceElapsedSeconds(1), Is.EqualTo(faceTime));
+            yield return Tap(Key.Escape);
+            Assert.That(game.Session.SurvivalSeconds, Is.EqualTo(paused));
+            yield return Tap(Key.Escape);
+            yield return new WaitForSecondsRealtime(0.15f);
+            Assert.That(game.Session.SurvivalSeconds, Is.GreaterThan(paused));
+            Assert.That(game.Session.FaceElapsedSeconds(1), Is.GreaterThan(faceTime));
+            game.HardDrop();
+            double inactive = game.Session.FaceElapsedSeconds(1);
+            yield return Settled(game);
+            yield return new WaitForSecondsRealtime(0.15f);
+            Assert.That(game.Session.FaceElapsedSeconds(1), Is.EqualTo(inactive));
+            Assert.That(game.Session.FaceElapsedSeconds(2), Is.GreaterThan(0));
+        }
+
+        [UnityTest]
+        public IEnumerator ConfiguredIntervalsQueueGarbageThenRefreshOnlyTheAffectedMiniatureAfterLock()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            var settings = (GarbageSettings)typeof(GameController).GetField("garbageSettings",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(game);
+            settings.face2Interval = settings.face3Interval = settings.face4Interval = 0.5f;
+            game.Restart(); yield return null; yield return null;
+            game.HardDrop(); yield return Settled(game);
+            var overview = GameObject.Find("GameCanvas/FacesOverview").transform;
+            var minis = Enumerable.Range(1, 4).Select(i => overview.Find($"Face{i}/PlacedCells").GetComponent<MiniBoardView>()).ToArray();
+            for (int face = 1; face < 4; face++)
+            {
+                Assert.That(game.Session.ActiveFace, Is.EqualTo(face));
+                var board = game.Model.Board;
+                int version = board.Version;
+                float deadline = Time.realtimeSinceStartup + 2;
+                while (game.Session.PendingGarbageRows(face) == 0 && Time.realtimeSinceStartup < deadline) yield return null;
+                yield return null;
+                int pending = game.Session.PendingGarbageRows(face);
+                Assert.That(pending, Is.EqualTo(face));
+                Assert.That(board.Version, Is.EqualTo(version), "An active piece must not be displaced by a timeout");
+                Assert.That(Occupied(board), Is.Zero);
+                Assert.That(overview.Find($"Face{face + 1}/Difficulty").GetComponent<Text>().text, Does.Contain($"+{face} AL FIJAR"));
+                AssertGhost(game, GameObject.Find("BoardRoot/GhostPieceRoot").GetComponentsInChildren<SpriteRenderer>());
+                var others = game.Session.Faces.Select(b => b.Version).ToArray();
+                game.HardDrop(); yield return null; yield return null;
+                Assert.That(game.IsTransitioning, Is.True);
+                Assert.That(Occupied(board), Is.EqualTo(4 + 9 * pending));
+                Assert.That(game.Session.PendingGarbageRows(face), Is.Zero);
+                Assert.That(game.Model.Score, Is.Zero);
+                Assert.That(game.Model.LinesCleared, Is.Zero);
+                for (int i = 0; i < 4; i++)
+                {
+                    AssertMini(minis[i], game.Session.Faces[i]);
+                    if (i != face) Assert.That(game.Session.Faces[i].Version, Is.EqualTo(others[i]));
+                }
+                double total = game.Session.SurvivalSeconds;
+                yield return new WaitForSecondsRealtime(0.1f);
+                Assert.That(game.Session.SurvivalSeconds, Is.EqualTo(total));
+                yield return Settled(game);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator GarbageOverflowFreezesFinalTimeAndRetryAndPauseRestartResetEveryClock()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            PlayerPrefs.SetInt(BestScoreStore.Key, 900); PlayerPrefs.Save();
+            game.HardDrop(); yield return Settled(game);
+            var board = game.Model.Board;
+            Assert.That(board.TryLock(TetrominoType.Z, new[] { new Vector2Int(0, 19) }), Is.True);
+            game.Session.AdvanceActiveTime(30);
+            game.HardDrop(); yield return null; yield return null;
+            Assert.That(game.Model.IsGameOver, Is.True);
+            Assert.That(game.Session.ActiveFace, Is.EqualTo(1));
+            Assert.That(board[0, 19], Is.EqualTo(TetrominoType.Z), "Overflow must preserve the top cell");
+            double final = game.Session.SurvivalSeconds;
+            Assert.That(GameObject.Find("GameCanvas/GameOverNotice/PanelBackground/SurvivalTimeValue").GetComponent<Text>().text,
+                Is.EqualTo(GameHudView.FormatTime(final)));
+            Assert.That(GameObject.Find("GameCanvas/GameInfoPanel/SurvivalTimeValue").GetComponent<Text>().text,
+                Is.EqualTo(GameHudView.FormatTime(final)));
+            Assert.That(GameObject.Find("BoardRoot/GhostPieceRoot").GetComponentsInChildren<SpriteRenderer>().All(r => !r.enabled), Is.True);
+            int revision = game.Model.Revision;
+            yield return Tap(Key.LeftArrow);
+            yield return Tap(Key.Space);
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(game.Session.SurvivalSeconds, Is.EqualTo(final));
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            ButtonAt("GameOverNotice/PanelBackground/RetryButton").onClick.Invoke();
+            AssertFreshClocks(game);
+            yield return null; yield return null;
+            game.HardDrop(); yield return Settled(game);
+            game.Session.AdvanceActiveTime(65);
+            yield return Tap(Key.Escape);
+            ButtonAt("PausePanel/PanelBackground/RestartButton").onClick.Invoke();
+            AssertFreshClocks(game);
+            Assert.That(BestScoreStore.Best, Is.EqualTo(900));
+            yield return null; yield return null;
+            Assert.That(GameObject.Find("GameCanvas/GameInfoPanel/SurvivalTimeValue").GetComponent<Text>().text, Is.EqualTo("00:00"));
+        }
+
+        [UnityTest]
+        public IEnumerator ReturningToMainMenuStopsOldSessionTimeAndPlayStartsNewClocks()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            game.Session.AdvanceActiveTime(135);
+            yield return Tap(Key.Escape);
+            var oldSession = game.Session;
+            double time = oldSession.SurvivalSeconds;
+            ButtonAt("PausePanel/PanelBackground/MainMenuButton").onClick.Invoke();
+            yield return null; yield return null;
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(oldSession.SurvivalSeconds, Is.EqualTo(time));
+            GameObject.Find("Canvas/MenuButtons/PlayButton").GetComponent<Button>().onClick.Invoke();
+            yield return null; yield return null;
+            var fresh = Object.FindAnyObjectByType<GameController>();
+            Assert.That(fresh.Session, Is.Not.SameAs(oldSession));
+            Assert.That(fresh.Session.SurvivalSeconds, Is.LessThan(1));
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.That(fresh.Session.FaceElapsedSeconds(i), Is.Zero);
+                Assert.That(fresh.Session.PendingGarbageRows(i), Is.Zero);
+            }
+            Assert.That(Time.timeScale, Is.EqualTo(1));
+        }
+
+        private static void AssertFreshClocks(GameController game)
+        {
+            Assert.That(game.Session.SurvivalSeconds, Is.Zero);
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.That(game.Session.FaceElapsedSeconds(i), Is.Zero);
+                Assert.That(game.Session.PendingGarbageRows(i), Is.Zero);
+                Assert.That(Occupied(game.Session.Faces[i]), Is.Zero);
+            }
+            Assert.That(game.Model.IsGameOver, Is.False);
+            Assert.That(game.Model.HasActivePiece, Is.True);
+            Assert.That(Time.timeScale, Is.EqualTo(1));
+        }
+
         private static void AssertMini(MiniBoardView mini, BoardState board)
         {
             Canvas.ForceUpdateCanvases();

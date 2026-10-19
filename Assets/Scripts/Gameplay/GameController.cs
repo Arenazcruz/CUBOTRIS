@@ -12,6 +12,7 @@ namespace Cubotris.Gameplay
         [SerializeField] private Text scoreText;
         [SerializeField] private GameObject gameOverNotice;
         [SerializeField] private FallSettings fallSettings = new FallSettings();
+        [SerializeField] private GarbageSettings garbageSettings = new GarbageSettings();
 
         public CubotrisSession Session { get; private set; }
         public TetrisGame Model => Session?.Game;
@@ -23,10 +24,12 @@ namespace Cubotris.Gameplay
         private int lastRevision = -1;
         private bool skipGravityOnce;
         private int transitionFrame = -1;
+        private int timedFrame = -1;
 
         private void Start()
         {
-            Session = new CubotrisSession(settings: fallSettings);
+            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings);
+            timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             Refresh();
         }
@@ -43,6 +46,7 @@ namespace Cubotris.Gameplay
                 return;
             }
             int lockedBefore = Model.PiecesLocked;
+            AdvanceActiveTime();
             if (AcceptsInput && !skipGravityOnce) Model.Tick(Time.deltaTime, SoftDropHeld);
             skipGravityOnce = false;
             HandlePlacement(lockedBefore);
@@ -54,10 +58,18 @@ namespace Cubotris.Gameplay
         public void HardDrop()
         {
             if (!AcceptsInput) return;
+            AdvanceActiveTime();
             int lockedBefore = Model.PiecesLocked;
             Model.HardDrop();
             HandlePlacement(lockedBefore);
             skipGravityOnce = true;
+        }
+
+        private void AdvanceActiveTime()
+        {
+            if (timedFrame == Time.frameCount || !AcceptsInput || !Model.HasActivePiece || Time.timeScale <= 0) return;
+            timedFrame = Time.frameCount;
+            Session.AdvanceActiveTime(Time.unscaledDeltaTime);
         }
 
         private void HandlePlacement(int lockedBefore)
@@ -72,6 +84,7 @@ namespace Cubotris.Gameplay
         public void SetPaused(bool paused)
         {
             if (Model == null || Model.IsGameOver || IsPaused == paused) return;
+            if (paused) AdvanceActiveTime();
             SaveRecord();
             IsPaused = paused;
             Time.timeScale = paused ? 0 : 1;
@@ -82,7 +95,8 @@ namespace Cubotris.Gameplay
         public void Restart()
         {
             SaveRecord();
-            Session = new CubotrisSession(settings: fallSettings);
+            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings);
+            timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             IsPaused = false;
             Time.timeScale = 1;

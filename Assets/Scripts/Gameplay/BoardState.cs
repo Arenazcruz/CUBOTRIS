@@ -39,6 +39,24 @@ namespace Cubotris.Gameplay
             return true;
         }
 
+        /// <summary>All rows are inserted atomically; overflow leaves every existing cell intact.</summary>
+        public bool TryPushGarbageRows(IReadOnlyList<int> holes)
+        {
+            int count = holes.Count;
+            if (count == 0) return true;
+            if (count > Height) return false;
+            foreach (int hole in holes)
+                if (hole < 0 || hole >= Width) throw new ArgumentOutOfRangeException(nameof(holes));
+            for (int y = Height - count; y < Height; y++)
+                for (int x = 0; x < Width; x++) if (cells[x, y].HasValue) return false;
+            for (int y = Height - 1; y >= count; y--)
+                for (int x = 0; x < Width; x++) cells[x, y] = cells[x, y - count];
+            for (int y = 0; y < count; y++)
+                for (int x = 0; x < Width; x++) cells[x, y] = x == holes[y] ? null : TetrominoType.J;
+            Version++;
+            return true;
+        }
+
         public int ClearFullRows()
         {
             int destination = 0;

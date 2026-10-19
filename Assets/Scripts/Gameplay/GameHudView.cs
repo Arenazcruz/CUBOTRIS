@@ -14,6 +14,11 @@ namespace Cubotris.Gameplay
         [SerializeField] private Image[] faceBorders = new Image[4];
         [SerializeField] private Text[] faceMarkers = new Text[4];
         [SerializeField] private Text nextFaceText;
+        [SerializeField] private Text survivalTimeText;
+        [SerializeField] private Text[] difficultyTexts = new Text[4];
+        private long shownSeconds = -1;
+        private readonly int[] shownRemaining = { -1, -1, -1, -1 };
+        private readonly int[] shownPending = { -1, -1, -1, -1 };
         private TetrominoType? shownPiece;
         private bool hasPreview;
         private int shownFace = -1;
@@ -25,6 +30,22 @@ namespace Cubotris.Gameplay
 
         public void Refresh(CubotrisSession session, int displayedFace)
         {
+            long seconds = (long)System.Math.Floor(session.SurvivalSeconds);
+            if (shownSeconds != seconds)
+            {
+                shownSeconds = seconds;
+                survivalTimeText.text = FormatTime(session.SurvivalSeconds);
+            }
+            for (int i = 0; i < difficultyTexts.Length; i++)
+            {
+                int remaining = (int)System.Math.Ceiling(session.SecondsUntilGarbage(i));
+                int pending = session.PendingGarbageRows(i);
+                if (shownRemaining[i] == remaining && shownPending[i] == pending) continue;
+                shownRemaining[i] = remaining; shownPending[i] = pending;
+                difficultyTexts[i].text = i == 0 ? "SIN\nPENALIZACIÓN" : pending > 0
+                    ? $"+{pending} AL FIJAR\n+{i} EN {remaining:00} s"
+                    : $"+{i} {(i == 1 ? "FILA" : "FILAS")}\nEN {remaining:00} s";
+            }
             for (int i = 0; i < miniBoards.Length; i++) miniBoards[i].Display(session.Faces[i]);
             if (shownFace != displayedFace)
             {
@@ -58,6 +79,12 @@ namespace Cubotris.Gameplay
                 nextBlocks[i].rectTransform.anchoredPosition = ((Vector2)cells[i] - center) * previewCellSize;
                 nextBlocks[i].rectTransform.sizeDelta = Vector2.one * previewCellSize * 0.94f;
             }
+        }
+
+        public static string FormatTime(double seconds)
+        {
+            long whole = (long)System.Math.Floor(System.Math.Max(0, seconds));
+            return $"{whole / 60:00}:{whole % 60:00}";
         }
     }
 }
