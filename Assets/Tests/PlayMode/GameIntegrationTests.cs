@@ -15,6 +15,8 @@ namespace Cubotris.Tests
     public sealed class GameIntegrationTests
     {
         private Keyboard keyboard;
+        private bool hadBestScore;
+        private int bestScoreBefore;
         private InputSettings.BackgroundBehavior previousBackground;
 #if UNITY_EDITOR
         private InputSettings.EditorInputBehaviorInPlayMode previousEditorInput;
@@ -23,6 +25,8 @@ namespace Cubotris.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            hadBestScore = PlayerPrefs.HasKey(BestScoreStore.Key);
+            bestScoreBefore = PlayerPrefs.GetInt(BestScoreStore.Key);
             previousBackground = InputSystem.settings.backgroundBehavior;
             InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
 #if UNITY_EDITOR
@@ -40,6 +44,10 @@ namespace Cubotris.Tests
         public IEnumerator TearDown()
         {
             Time.timeScale = 1;
+            var live = Object.FindAnyObjectByType<GameController>();
+            if (live != null) Object.DestroyImmediate(live.gameObject);
+            Restore(BestScoreStore.Key, hadBestScore, bestScoreBefore);
+            PlayerPrefs.Save();
             InputSystem.RemoveDevice(keyboard);
             InputSystem.settings.backgroundBehavior = previousBackground;
 #if UNITY_EDITOR
@@ -363,6 +371,113 @@ namespace Cubotris.Tests
             finally { InputSystem.RemoveDevice(mouse); }
         }
 
+        [UnityTest]
+        public IEnumerator GameOverDisplaysRealScoresAndPointerRetryCreatesOneCleanGame()
+        {
+            PlayerPrefs.DeleteKey(BestScoreStore.Key);
+            var game = Object.FindAnyObjectByType<GameController>();
+            yield return FinishScoredGame(game);
+            var panel = GameObject.Find("GameCanvas/GameOverNotice").transform;
+            Assert.That(game.Model.Score, Is.EqualTo(100));
+            Assert.That(panel.Find("PanelBackground/FinalScoreValue").GetComponent<Text>().text, Is.EqualTo("100"));
+            Assert.That(panel.Find("PanelBackground/BestScoreValue").GetComponent<Text>().text, Is.EqualTo("100"));
+            Assert.That(BestScoreStore.Best, Is.EqualTo(100));
+            Assert.That(EventSystem.current.currentSelectedGameObject, Is.EqualTo(ButtonAt("GameOverNotice/PanelBackground/RetryButton").gameObject));
+            int revision = game.Model.Revision;
+            Press(Key.Escape, Key.A, Key.W, Key.Space); yield return null; yield return null;
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            Assert.That(game.IsPaused, Is.False);
+            Press(); yield return null; yield return null;
+            var mouse = InputSystem.AddDevice<Mouse>(); mouse.MakeCurrent();
+            try
+            {
+                var old = game.Model;
+                var retry = ButtonAt("GameOverNotice/PanelBackground/RetryButton");
+                var menu = ButtonAt("GameOverNotice/PanelBackground/MainMenuButton");
+                Time.timeScale = 0;
+                yield return Click(mouse, retry);
+                Assert.That(game.Model, Is.Not.SameAs(old));
+                var restarted = game.Model;
+                retry.onClick.Invoke(); menu.onClick.Invoke();
+                Assert.That(game.Model, Is.SameAs(restarted), "A duplicate callback must not restart twice or leave Game");
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Game"));
+                Assert.That(Time.timeScale, Is.EqualTo(1));
+                Assert.That(panel.gameObject.activeSelf, Is.False);
+                Assert.That(game.Model.Score, Is.Zero);
+                Assert.That(game.Model.LinesCleared, Is.Zero);
+                Assert.That(game.Model.PiecesLocked, Is.Zero);
+                Assert.That(game.Model.HasActivePiece, Is.True);
+                Assert.That(game.AcceptsInput, Is.True);
+                Assert.That(GameObject.Find("BoardRoot/PlacedBlocksRoot").transform.childCount, Is.Zero);
+                Assert.That(GameObject.Find("BoardRoot/ActivePieceRoot").transform.childCount, Is.EqualTo(4));
+                Assert.That(BestScoreStore.Best, Is.EqualTo(100));
+            }
+            finally { InputSystem.RemoveDevice(mouse); }
+        }
+
+        [UnityTest]
+        public IEnumerator GameOverKeyboardReturnsToMenuWithRecordAndPlayStartsAgain()
+        {
+            PlayerPrefs.SetInt(BestScoreStore.Key, 800); PlayerPrefs.Save();
+            var game = Object.FindAnyObjectByType<GameController>();
+            yield return FinishScoredGame(game);
+            Assert.That(GameObject.Find("GameCanvas/GameOverNotice/PanelBackground/BestScoreValue").GetComponent<Text>().text, Is.EqualTo("800"));
+            Press(Key.DownArrow); yield return null; yield return null;
+            Assert.That(EventSystem.current.currentSelectedGameObject, Is.EqualTo(ButtonAt("GameOverNotice/PanelBackground/MainMenuButton").gameObject));
+            Press(); yield return null; yield return null;
+            Time.timeScale = 0;
+            Press(Key.Enter); yield return null; yield return null; yield return null;
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
+            Assert.That(Time.timeScale, Is.EqualTo(1));
+            Assert.That(GameObject.Find("Canvas/BestScorePanel/Value").GetComponent<Text>().text, Is.EqualTo("800"));
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"), "Holding Enter must not also activate JUGAR");
+            Press(); yield return null; yield return null;
+            GameObject.Find("Canvas/MenuButtons/PlayButton").GetComponent<Button>().onClick.Invoke();
+            yield return null; yield return null;
+            var fresh = Object.FindAnyObjectByType<GameController>();
+            Assert.That(fresh.Model.Score, Is.Zero);
+            Assert.That(fresh.Model.HasActivePiece, Is.True);
+            Assert.That(fresh.AcceptsInput, Is.True);
+            Assert.That(BestScoreStore.Best, Is.EqualTo(800));
+        }
+
+        [UnityTest]
+        public IEnumerator HeldEnterRetriesOnlyOnceAndPanelWorksOnTheNextLoss()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            yield return FinishScoredGame(game);
+            Press(Key.Enter); yield return null; yield return null;
+            var restarted = game.Model;
+            Assert.That(restarted.IsGameOver, Is.False);
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(game.Model, Is.SameAs(restarted));
+            Assert.That(game.Model.PiecesLocked, Is.Zero);
+            Press(); yield return null; yield return null;
+            int x = game.Model.Active.Position.x;
+            Press(Key.A); yield return null; yield return null;
+            Assert.That(game.Model.Active.Position.x, Is.EqualTo(x - 1));
+            Press(); yield return null; yield return null;
+            for (int i = 0; i < 25 && !game.Model.IsGameOver; i++) { game.HardDrop(); yield return null; }
+            yield return null;
+            Assert.That(game.Model.IsGameOver, Is.True);
+            var retry = ButtonAt("GameOverNotice/PanelBackground/RetryButton");
+            Assert.That(retry.interactable, Is.True);
+            Assert.That(EventSystem.current.currentSelectedGameObject, Is.EqualTo(retry.gameObject));
+            retry.onClick.Invoke(); yield return null; yield return null;
+            Assert.That(game.Model.IsGameOver, Is.False);
+            Assert.That(game.Model.PiecesLocked, Is.Zero);
+        }
+
+        private static IEnumerator FinishScoredGame(GameController game)
+        {
+            game.Model.Board.TryLock(TetrominoType.I, Enumerable.Range(0, 10).Select(x => new Vector2Int(x, 0)).ToArray());
+            game.HardDrop(); yield return null; yield return null;
+            Assert.That(game.Model.Score, Is.EqualTo(100));
+            for (int i = 0; i < 25 && !game.Model.IsGameOver; i++) { game.HardDrop(); yield return null; }
+            yield return null; yield return null;
+            Assert.That(game.Model.IsGameOver, Is.True);
+        }
         private static IEnumerator Click(Mouse mouse, Button button)
         {
             Canvas.ForceUpdateCanvases();
