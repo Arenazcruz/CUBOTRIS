@@ -478,10 +478,183 @@ namespace Cubotris.Tests
             yield return null; yield return null;
             Assert.That(game.Model.IsGameOver, Is.True);
         }
+        [UnityTest]
+        public IEnumerator PauseKeyboardVisitsEveryButtonAndBothSlidersWithoutMovingTheBoard()
+        {
+            const string musicKey = "Cubotris.Audio.MusicVolumePercent", effectsKey = "Cubotris.Audio.EffectsVolumePercent";
+            bool hadMusic = PlayerPrefs.HasKey(musicKey), hadEffects = PlayerPrefs.HasKey(effectsKey);
+            int oldMusic = PlayerPrefs.GetInt(musicKey), oldEffects = PlayerPrefs.GetInt(effectsKey);
+            try
+            {
+                PlayerPrefs.SetInt(musicKey, 50); PlayerPrefs.SetInt(effectsKey, 50);
+                var game = Object.FindAnyObjectByType<GameController>();
+                yield return Tap(Key.Escape);
+                Selected("GameCanvas/PausePanel/PanelBackground/ResumeButton");
+                yield return Tap(Key.DownArrow);
+                Selected("GameCanvas/PausePanel/PanelBackground/RestartButton");
+                var old = game.Model;
+                yield return Tap(Key.Enter);
+                Assert.That(game.Model, Is.Not.SameAs(old));
+                Assert.That(game.IsPaused, Is.False);
+                yield return Tap(Key.Escape);
+                int revision = game.Model.Revision;
+                yield return Tap(Key.DownArrow); yield return Tap(Key.DownArrow);
+                Selected("GameCanvas/PausePanel/PanelBackground/OptionsButton");
+                yield return Tap(Key.Enter);
+                Selected("GameCanvas/PauseOptionsPanel/PanelBackground/MusicVolume/Slider");
+                yield return Tap(Key.RightArrow);
+                Assert.That(PlayerPrefs.GetInt(musicKey), Is.EqualTo(51));
+                yield return Tap(Key.DownArrow);
+                Selected("GameCanvas/PauseOptionsPanel/PanelBackground/EffectsVolume/Slider");
+                yield return Tap(Key.LeftArrow);
+                Assert.That(PlayerPrefs.GetInt(effectsKey), Is.EqualTo(49));
+                yield return Tap(Key.DownArrow);
+                Selected("GameCanvas/PauseOptionsPanel/PanelBackground/BackButton");
+                yield return Tap(Key.Enter);
+                Selected("GameCanvas/PausePanel/PanelBackground/OptionsButton");
+                yield return Tap(Key.DownArrow);
+                Selected("GameCanvas/PausePanel/PanelBackground/MainMenuButton");
+                yield return Tap(Key.UpArrow); yield return Tap(Key.UpArrow); yield return Tap(Key.UpArrow);
+                Selected("GameCanvas/PausePanel/PanelBackground/ResumeButton");
+                Assert.That(game.Model.Revision, Is.EqualTo(revision));
+                yield return Tap(Key.Enter);
+                Assert.That(game.IsPaused, Is.False);
+                Assert.That(EventSystem.current.currentSelectedGameObject, Is.Null);
+                yield return Tap(Key.Escape);
+                yield return Tap(Key.UpArrow);
+                Selected("GameCanvas/PausePanel/PanelBackground/MainMenuButton");
+                yield return Tap(Key.Enter);
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
+                Assert.That(Time.timeScale, Is.EqualTo(1));
+            }
+            finally { Restore(musicKey, hadMusic, oldMusic); Restore(effectsKey, hadEffects, oldEffects); PlayerPrefs.Save(); }
+        }
+
+        [UnityTest]
+        public IEnumerator ActiveGameDisablesMenuNavigationAndMenusBlockPieceInput()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            Assert.That(EventSystem.current.sendNavigationEvents, Is.False);
+            EventSystem.current.SetSelectedGameObject(ButtonAt("PauseButton").gameObject);
+            int x = game.Model.Active.Position.x;
+            yield return Tap(Key.LeftArrow);
+            Assert.That(game.Model.Active.Position.x, Is.EqualTo(x - 1));
+            Assert.That(EventSystem.current.currentSelectedGameObject, Is.Null);
+            yield return Tap(Key.Enter);
+            Assert.That(game.IsPaused, Is.False);
+            yield return Tap(Key.Escape);
+            Assert.That(EventSystem.current.sendNavigationEvents, Is.True);
+            int revision = game.Model.Revision;
+            yield return Tap(Key.DownArrow);
+            Selected("GameCanvas/PausePanel/PanelBackground/RestartButton");
+            yield return Tap(Key.UpArrow);
+            Selected("GameCanvas/PausePanel/PanelBackground/ResumeButton");
+            yield return Tap(Key.LeftArrow); yield return Tap(Key.RightArrow);
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            yield return Tap(Key.Escape);
+            Assert.That(EventSystem.current.sendNavigationEvents, Is.False);
+            x = game.Model.Active.Position.x;
+            yield return Tap(Key.RightArrow);
+            Assert.That(game.Model.Active.Position.x, Is.EqualTo(x + 1));
+        }
+
+        [UnityTest]
+        public IEnumerator MainMenuKeyboardNavigationAndOptionsRemainFunctional()
+        {
+            const string musicKey = "Cubotris.Audio.MusicVolumePercent", effectsKey = "Cubotris.Audio.EffectsVolumePercent";
+            bool hadMusic = PlayerPrefs.HasKey(musicKey), hadEffects = PlayerPrefs.HasKey(effectsKey);
+            int oldMusic = PlayerPrefs.GetInt(musicKey), oldEffects = PlayerPrefs.GetInt(effectsKey);
+            try
+            {
+                PlayerPrefs.SetInt(musicKey, 50); PlayerPrefs.SetInt(effectsKey, 50);
+                yield return SceneManager.LoadSceneAsync("MainMenu"); yield return null;
+                Assert.That(EventSystem.current.sendNavigationEvents, Is.True);
+                Selected("Canvas/MenuButtons/PlayButton");
+                yield return Tap(Key.UpArrow);
+                Selected("Canvas/MenuButtons/ExitButton");
+                yield return Tap(Key.UpArrow);
+                Selected("Canvas/MenuButtons/OptionsButton");
+                yield return Tap(Key.Enter);
+                Selected("Canvas/OptionsPanel/PanelBackground/MusicVolume/Slider");
+                yield return Tap(Key.LeftArrow);
+                Assert.That(PlayerPrefs.GetInt(musicKey), Is.EqualTo(49));
+                yield return Tap(Key.DownArrow);
+                Selected("Canvas/OptionsPanel/PanelBackground/EffectsVolume/Slider");
+                yield return Tap(Key.RightArrow);
+                Assert.That(PlayerPrefs.GetInt(effectsKey), Is.EqualTo(51));
+                yield return Tap(Key.DownArrow);
+                Selected("Canvas/OptionsPanel/PanelBackground/BackButton");
+                yield return Tap(Key.Enter);
+                Selected("Canvas/MenuButtons/OptionsButton");
+                yield return Tap(Key.UpArrow);
+                yield return Tap(Key.Enter);
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Game"));
+                Assert.That(EventSystem.current.sendNavigationEvents, Is.False);
+            }
+            finally { Restore(musicKey, hadMusic, oldMusic); Restore(effectsKey, hadEffects, oldEffects); PlayerPrefs.Save(); }
+        }
+
+        private IEnumerator Tap(Key key)
+        {
+            Press(key); yield return null; yield return null;
+            Press(); yield return null; yield return null;
+        }
+        private static void Selected(string path)
+        { Assert.That(EventSystem.current.currentSelectedGameObject, Is.EqualTo(GameObject.Find(path)), "Selection at " + path); }
+        [UnityTest]
+        public IEnumerator MouseNavigatesMainMenuPauseOptionsAndGameOver()
+        {
+            const string musicKey = "Cubotris.Audio.MusicVolumePercent", effectsKey = "Cubotris.Audio.EffectsVolumePercent";
+            bool hadMusic = PlayerPrefs.HasKey(musicKey), hadEffects = PlayerPrefs.HasKey(effectsKey);
+            int oldMusic = PlayerPrefs.GetInt(musicKey), oldEffects = PlayerPrefs.GetInt(effectsKey);
+            var mouse = InputSystem.AddDevice<Mouse>(); mouse.MakeCurrent();
+            try
+            {
+                yield return SceneManager.LoadSceneAsync("MainMenu"); yield return null;
+                yield return Click(mouse, GameObject.Find("Canvas/MenuButtons/OptionsButton").GetComponent<Button>());
+                var music = GameObject.Find("Canvas/OptionsPanel/PanelBackground/MusicVolume/Slider").GetComponent<Slider>();
+                yield return ClickSlider(mouse, music, 0.75f);
+                Assert.That(music.value, Is.InRange(70, 80));
+                yield return Click(mouse, GameObject.Find("Canvas/OptionsPanel/PanelBackground/BackButton").GetComponent<Button>());
+                yield return Click(mouse, GameObject.Find("Canvas/MenuButtons/PlayButton").GetComponent<Button>());
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Game"));
+                yield return Click(mouse, ButtonAt("PauseButton"));
+                yield return Click(mouse, ButtonAt("PausePanel/PanelBackground/OptionsButton"));
+                var effects = GameObject.Find("GameCanvas/PauseOptionsPanel/PanelBackground/EffectsVolume/Slider").GetComponent<Slider>();
+                yield return ClickSlider(mouse, effects, 0.3f);
+                Assert.That(effects.value, Is.InRange(25, 35));
+                yield return Click(mouse, ButtonAt("PauseOptionsPanel/PanelBackground/BackButton"));
+                yield return Click(mouse, ButtonAt("PausePanel/PanelBackground/ResumeButton"));
+                var game = Object.FindAnyObjectByType<GameController>();
+                Assert.That(game.IsPaused, Is.False);
+                yield return FinishScoredGame(game);
+                yield return Click(mouse, ButtonAt("GameOverNotice/PanelBackground/MainMenuButton"));
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
+                Assert.That(Time.timeScale, Is.EqualTo(1));
+            }
+            finally
+            {
+                InputSystem.RemoveDevice(mouse);
+                Restore(musicKey, hadMusic, oldMusic); Restore(effectsKey, hadEffects, oldEffects); PlayerPrefs.Save();
+            }
+        }
+
+        private static IEnumerator ClickSlider(Mouse mouse, Slider slider, float fraction)
+        {
+            Canvas.ForceUpdateCanvases();
+            var corners = new Vector3[4]; ((RectTransform)slider.transform).GetWorldCorners(corners);
+            var position = RectTransformUtility.WorldToScreenPoint(null, new Vector3(Mathf.Lerp(corners[0].x, corners[2].x, fraction), (corners[0].y + corners[2].y) / 2, corners[0].z));
+            yield return ClickAt(mouse, position);
+        }
         private static IEnumerator Click(Mouse mouse, Button button)
         {
             Canvas.ForceUpdateCanvases();
             var position = RectTransformUtility.WorldToScreenPoint(null, button.transform.position);
+            yield return ClickAt(mouse, position);
+        }
+
+        private static IEnumerator ClickAt(Mouse mouse, Vector2 position)
+        {
             InputSystem.QueueStateEvent(mouse, new MouseState { position = position });
             yield return null; yield return null;
             InputSystem.QueueStateEvent(mouse, new MouseState { position = position }.WithButton(MouseButton.Left));
