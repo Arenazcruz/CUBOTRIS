@@ -31,6 +31,7 @@ namespace Cubotris.Gameplay
         public bool HasActivePiece { get; private set; }
         public bool IsGameOver { get; private set; }
         public int LinesCleared { get; private set; }
+        public int Score { get; private set; }
         public int PiecesLocked { get; private set; }
         public int Revision { get; private set; }
         public float GravityInterval => Mathf.Max(0.01f, settings.minimumInterval,
@@ -119,7 +120,9 @@ namespace Cubotris.Gameplay
                 return;
             }
             PiecesLocked++;
-            LinesCleared += Board.ClearFullRows();
+            int cleared = Board.ClearFullRows();
+            LinesCleared += cleared;
+            Score += cleared switch { 1 => 100, 2 => 300, 3 => 500, 4 => 800, _ => 0 };
             fallTime = 0;
             Spawn();
         }

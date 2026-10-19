@@ -11,12 +11,30 @@ namespace Cubotris.Gameplay
         [SerializeField, Min(0.01f)] private float repeatInterval = 0.075f;
         private int heldDirection;
         private float repeatTime;
+        private int inputVersion;
+        private bool waitForRelease;
 
         private void Update()
         {
             var keyboard = Keyboard.current;
+            if (inputVersion != controller.InputVersion)
+            {
+                inputVersion = controller.InputVersion;
+                ResetInput();
+                waitForRelease = true;
+            }
             if (keyboard == null || !controller.AcceptsInput)
             {
+                ResetInput();
+                return;
+            }
+            // Keys used in the pause UI must be released before controlling the piece again.
+            if (waitForRelease)
+            {
+                waitForRelease = keyboard.aKey.isPressed || keyboard.dKey.isPressed
+                    || keyboard.wKey.isPressed || keyboard.sKey.isPressed || keyboard.spaceKey.isPressed
+                    || keyboard.leftArrowKey.isPressed || keyboard.rightArrowKey.isPressed
+                    || keyboard.upArrowKey.isPressed || keyboard.downArrowKey.isPressed;
                 ResetInput();
                 return;
             }

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Cubotris.Gameplay;
 
 namespace Cubotris.UI
 {
@@ -17,6 +18,7 @@ namespace Cubotris.UI
         [SerializeField] private GameObject[] mainMenuContent;
         [SerializeField] private Selectable firstOption;
         [SerializeField] private Button optionsButton;
+        [SerializeField] private Text bestScoreText;
         [SerializeField, Min(0.1f)] private float messageDuration = 3.5f;
         [SerializeField, Min(0.01f)] private float fadeDuration = 0.15f;
 
@@ -25,6 +27,7 @@ namespace Cubotris.UI
         private void OnEnable()
         {
             HideNotification();
+            if (bestScoreText != null) bestScoreText.text = BestScoreStore.Best.ToString();
         }
 
         private void Start()

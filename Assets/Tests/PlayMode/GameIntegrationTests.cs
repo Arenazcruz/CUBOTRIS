@@ -39,6 +39,7 @@ namespace Cubotris.Tests
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            Time.timeScale = 1;
             InputSystem.RemoveDevice(keyboard);
             InputSystem.settings.backgroundBehavior = previousBackground;
 #if UNITY_EDITOR
@@ -121,6 +122,8 @@ namespace Cubotris.Tests
             Assert.That(game.Model.IsGameOver, Is.True);
             Assert.That(GameObject.Find("GameCanvas/GameOverNotice"), Is.Not.Null);
             Assert.That(GameObject.Find("GameCanvas/GameInfoPanel/StateValue").GetComponent<Text>().text, Is.EqualTo("PARTIDA TERMINADA"));
+            ButtonAt("PauseButton").onClick.Invoke();
+            Assert.That(game.IsPaused, Is.False);
             int locked = game.Model.PiecesLocked;
             int revision = game.Model.Revision;
             Press(Key.Space, Key.A, Key.W, Key.S);
@@ -175,6 +178,222 @@ namespace Cubotris.Tests
             }
         }
 
+        [UnityTest]
+        public IEnumerator EveryShapeAndRotationFitsBothWallsAndFloorVisually()
+        {
+            var live = Object.FindAnyObjectByType<GameController>();
+            live.enabled = false;
+            Object.FindAnyObjectByType<TetrisInput>().enabled = false;
+            var view = Object.FindAnyObjectByType<BoardView>();
+            var board = view.transform;
+            var grid = board.Find("BoardGrid").GetComponent<SpriteRenderer>().bounds;
+            foreach (TetrominoType type in System.Enum.GetValues(typeof(TetrominoType)))
+                for (int rotation = 0; rotation < 4; rotation++)
+                    foreach (int side in new[] { -1, 1 })
+                    {
+                        var model = new TetrisGame(source: new SinglePiece(type));
+                        for (int i = 0; i < rotation; i++) Assert.That(model.RotateClockwise(), Is.True);
+                        while (model.Move(side)) { }
+                        Assert.That(model.Move(side), Is.False);
+                        Assert.That(side < 0 ? model.Active.Cells.Min(c => c.x) : model.Active.Cells.Max(c => c.x), Is.EqualTo(side < 0 ? 0 : 9));
+                        while (model.Board.CanPlace(model.Active.Cells.Select(c => c + Vector2Int.down).ToArray())) model.StepDown();
+                        Assert.That(model.Active.Cells.Min(c => c.y), Is.Zero);
+                        view.Render(model);
+                        CheckBounds(board.Find("ActivePieceRoot"), grid);
+                        model.RotateClockwise();
+                        Assert.That(model.Board.CanPlace(model.Active.Cells), Is.True, $"{type}/{rotation}/{side} after rotation at corner");
+                        view.Render(model);
+                        CheckBounds(board.Find("ActivePieceRoot"), grid);
+                        model.HardDrop(); view.Render(model);
+                        CheckBounds(board.Find("PlacedBlocksRoot"), grid);
+                        yield return null;
+                    }
+        }
+
+        [UnityTest]
+        public IEnumerator PauseAndEscapeFreezeExactlyAndHeldKeysCannotLeakOnResume()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            Press(Key.A); yield return null; yield return null;
+            Press(Key.A, Key.Escape, Key.Space, Key.S, Key.W); yield return null; yield return null;
+            Assert.That(game.IsPaused, Is.True);
+            Assert.That(Time.timeScale, Is.Zero);
+            int revision = game.Model.Revision, locked = game.Model.PiecesLocked;
+            var blocks = GameObject.Find("BoardRoot/ActivePieceRoot").GetComponentsInChildren<SpriteRenderer>().Select(r => r.bounds).ToArray();
+            yield return new WaitForSecondsRealtime(0.9f);
+            game.Move(1); game.Rotate(); game.HardDrop();
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            CollectionAssert.AreEqual(blocks, GameObject.Find("BoardRoot/ActivePieceRoot").GetComponentsInChildren<SpriteRenderer>().Select(r => r.bounds).ToArray());
+            Press(Key.A, Key.Space, Key.S); yield return null; yield return null;
+            Press(Key.A, Key.Space, Key.S, Key.Escape); yield return null; yield return null;
+            Assert.That(game.IsPaused, Is.False);
+            Assert.That(Time.timeScale, Is.EqualTo(1));
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            Assert.That(game.Model.PiecesLocked, Is.EqualTo(locked));
+            Press(); yield return null; yield return null;
+            Press(Key.Space); yield return null; yield return null;
+            Assert.That(game.Model.PiecesLocked, Is.EqualTo(locked + 1));
+        }
+
+        [UnityTest]
+        public IEnumerator PauseButtonsResumeAndRestartWithoutDoubleTransitions()
+        {
+            var game = Object.FindAnyObjectByType<GameController>();
+            game.HardDrop(); yield return null;
+            var oldModel = game.Model;
+            ButtonAt("PauseButton").onClick.Invoke(); yield return null;
+            int revision = oldModel.Revision;
+            ButtonAt("PausePanel/PanelBackground/ResumeButton").onClick.Invoke();
+            ButtonAt("PausePanel/PanelBackground/RestartButton").onClick.Invoke();
+            Assert.That(game.Model, Is.SameAs(oldModel));
+            Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            yield return null; yield return null;
+            ButtonAt("PauseButton").onClick.Invoke(); yield return null;
+            ButtonAt("PausePanel/PanelBackground/RestartButton").onClick.Invoke();
+            ButtonAt("PauseButton").onClick.Invoke();
+            yield return null; yield return null;
+            Assert.That(game.IsPaused, Is.False);
+            Assert.That(Time.timeScale, Is.EqualTo(1));
+            Assert.That(game.Model, Is.Not.SameAs(oldModel));
+            Assert.That(game.Model.LinesCleared, Is.Zero);
+            Assert.That(game.Model.Score, Is.Zero);
+            Assert.That(game.Model.PiecesLocked, Is.Zero);
+            Assert.That(game.Model.HasActivePiece, Is.True);
+            Assert.That(GameObject.Find("BoardRoot/PlacedBlocksRoot").transform.childCount, Is.Zero);
+        }
+
+        [UnityTest]
+        public IEnumerator PauseOptionsSharePreferencesAndBackOrEscapeReturnsToPause()
+        {
+            const string musicKey = "Cubotris.Audio.MusicVolumePercent", effectsKey = "Cubotris.Audio.EffectsVolumePercent";
+            bool hadMusic = PlayerPrefs.HasKey(musicKey), hadEffects = PlayerPrefs.HasKey(effectsKey);
+            int oldMusic = PlayerPrefs.GetInt(musicKey), oldEffects = PlayerPrefs.GetInt(effectsKey);
+            try
+            {
+                ButtonAt("PauseButton").onClick.Invoke(); yield return null;
+                ButtonAt("PausePanel/PanelBackground/OptionsButton").onClick.Invoke(); yield return null;
+                var panel = GameObject.Find("GameCanvas").transform.Find("PauseOptionsPanel");
+                Assert.That(panel.gameObject.activeSelf, Is.True);
+                var music = panel.Find("PanelBackground/MusicVolume/Slider").GetComponent<Slider>();
+                var effects = panel.Find("PanelBackground/EffectsVolume/Slider").GetComponent<Slider>();
+                music.value = 17; effects.value = 93;
+                Assert.That(panel.Find("PanelBackground/MusicVolume/ValueText").GetComponent<Text>().text, Is.EqualTo("17 %"));
+                Assert.That(PlayerPrefs.GetInt(musicKey), Is.EqualTo(17));
+                Assert.That(PlayerPrefs.GetInt(effectsKey), Is.EqualTo(93));
+                Press(Key.RightArrow); yield return null; yield return null;
+                Assert.That(music.value, Is.EqualTo(18), "UI navigation must work at timeScale zero");
+                Press(); yield return null; yield return null;
+                ButtonAt("PauseOptionsPanel/PanelBackground/BackButton").onClick.Invoke(); yield return null;
+                Assert.That(panel.gameObject.activeSelf, Is.False);
+                Assert.That(Object.FindAnyObjectByType<GameController>().IsPaused, Is.True);
+                ButtonAt("PausePanel/PanelBackground/OptionsButton").onClick.Invoke(); yield return null;
+                Press(Key.Escape); yield return null; yield return null;
+                Assert.That(panel.gameObject.activeSelf, Is.False);
+                Assert.That(GameObject.Find("GameCanvas/PausePanel"), Is.Not.Null);
+                Assert.That(Time.timeScale, Is.Zero);
+                Press(); yield return null; yield return null;
+                ButtonAt("PausePanel/PanelBackground/MainMenuButton").onClick.Invoke(); yield return null; yield return null;
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
+                Assert.That(Time.timeScale, Is.EqualTo(1));
+                GameObject.Find("Canvas/MenuButtons/OptionsButton").GetComponent<Button>().onClick.Invoke();
+                var mainPanel = GameObject.Find("Canvas/OptionsPanel").transform;
+                Assert.That(mainPanel.Find("PanelBackground/MusicVolume/Slider").GetComponent<Slider>().value, Is.EqualTo(18));
+                Assert.That(mainPanel.Find("PanelBackground/EffectsVolume/Slider").GetComponent<Slider>().value, Is.EqualTo(93));
+            }
+            finally
+            {
+                Restore(musicKey, hadMusic, oldMusic); Restore(effectsKey, hadEffects, oldEffects);
+                PlayerPrefs.Save();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator ScoreAndRecordUpdateImmediatelySurviveRestartAndAppearInMainMenu()
+        {
+            bool had = PlayerPrefs.HasKey(BestScoreStore.Key); int old = PlayerPrefs.GetInt(BestScoreStore.Key);
+            GameController game = null;
+            try
+            {
+                PlayerPrefs.DeleteKey(BestScoreStore.Key);
+                Assert.That(BestScoreStore.Best, Is.Zero);
+                game = Object.FindAnyObjectByType<GameController>();
+                for (int run = 1; run <= 2; run++)
+                {
+                    game.Model.Board.TryLock(TetrominoType.I, Enumerable.Range(0, 10).Where(x => !game.Model.Board[x, 0].HasValue).Select(x => new Vector2Int(x, 0)).ToArray());
+                    game.HardDrop(); yield return null; yield return null;
+                    Assert.That(game.Model.LinesCleared, Is.EqualTo(run));
+                    Assert.That(game.Model.Score, Is.EqualTo(run * 100));
+                    Assert.That(BestScoreStore.Best, Is.EqualTo(run * 100));
+                    Assert.That(GameObject.Find("GameCanvas/GameInfoPanel/ScoreValue").GetComponent<Text>().text, Is.EqualTo((run * 100).ToString()));
+                }
+                ButtonAt("PauseButton").onClick.Invoke(); yield return null;
+                ButtonAt("PausePanel/PanelBackground/RestartButton").onClick.Invoke(); yield return null; yield return null;
+                Assert.That(game.Model.Score, Is.Zero);
+                Assert.That(BestScoreStore.Best, Is.EqualTo(200));
+                BestScoreStore.Record(100);
+                Assert.That(BestScoreStore.Best, Is.EqualTo(200));
+                ButtonAt("PauseButton").onClick.Invoke(); yield return null;
+                ButtonAt("PausePanel/PanelBackground/MainMenuButton").onClick.Invoke(); yield return null; yield return null;
+                Assert.That(Time.timeScale, Is.EqualTo(1));
+                Assert.That(GameObject.Find("Canvas/BestScorePanel/Value").GetComponent<Text>().text, Is.EqualTo("200"));
+                yield return SceneManager.LoadSceneAsync("MainMenu"); yield return null;
+                Assert.That(GameObject.Find("Canvas/BestScorePanel/Value").GetComponent<Text>().text, Is.EqualTo("200"));
+            }
+            finally
+            {
+                if (game != null) Object.DestroyImmediate(game.gameObject);
+                Restore(BestScoreStore.Key, had, old); PlayerPrefs.Save();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PointerCanClickPauseAndResumeThroughTheCanvas()
+        {
+            var mouse = InputSystem.AddDevice<Mouse>();
+            mouse.MakeCurrent();
+            try
+            {
+                yield return Click(mouse, ButtonAt("PauseButton"));
+                Assert.That(Object.FindAnyObjectByType<GameController>().IsPaused, Is.True);
+                yield return Click(mouse, ButtonAt("PausePanel/PanelBackground/ResumeButton"));
+                Assert.That(Object.FindAnyObjectByType<GameController>().IsPaused, Is.False);
+                Assert.That(Time.timeScale, Is.EqualTo(1));
+            }
+            finally { InputSystem.RemoveDevice(mouse); }
+        }
+
+        private static IEnumerator Click(Mouse mouse, Button button)
+        {
+            Canvas.ForceUpdateCanvases();
+            var position = RectTransformUtility.WorldToScreenPoint(null, button.transform.position);
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = position });
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = position }.WithButton(MouseButton.Left));
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = position });
+            yield return null; yield return null;
+        }
+
+        private static Button ButtonAt(string path) => GameObject.Find("GameCanvas").transform.Find(path).GetComponent<Button>();
+        private static void Restore(string key, bool had, int value) { if (had) PlayerPrefs.SetInt(key, value); else PlayerPrefs.DeleteKey(key); }
+        private sealed class SinglePiece : IPieceSource
+        {
+            private readonly TetrominoType type;
+            public SinglePiece(TetrominoType type) { this.type = type; }
+            public TetrominoType Next() => type;
+        }
+        private static void CheckBounds(Transform root, Bounds area)
+        {
+            foreach (var r in root.GetComponentsInChildren<SpriteRenderer>())
+            {
+                if (!r.enabled) continue;
+                Assert.That(r.bounds.min.x, Is.GreaterThanOrEqualTo(area.min.x - 0.001f), r.name + " left");
+                Assert.That(r.bounds.max.x, Is.LessThanOrEqualTo(area.max.x + 0.001f), r.name + " right");
+                Assert.That(r.bounds.min.y, Is.GreaterThanOrEqualTo(area.min.y - 0.001f), r.name + " floor");
+                Assert.That(r.bounds.max.y, Is.LessThanOrEqualTo(area.max.y + 0.001f), r.name + " top");
+            }
+        }
         private void Press(params Key[] keys) { InputSystem.QueueStateEvent(keyboard, new KeyboardState(keys)); }
     }
 }

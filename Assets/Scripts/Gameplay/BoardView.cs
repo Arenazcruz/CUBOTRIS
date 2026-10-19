@@ -13,9 +13,15 @@ namespace Cubotris.Gameplay
         private readonly SpriteRenderer[] activeBlocks = new SpriteRenderer[4];
         private SpriteRenderer[,] placedBlocks;
         private int boardVersion = -1;
+        private BoardState renderedBoard;
 
         public void Render(TetrisGame game)
         {
+            if (renderedBoard != game.Board)
+            {
+                renderedBoard = game.Board;
+                boardVersion = -1;
+            }
             if (placedBlocks == null) placedBlocks = new SpriteRenderer[game.Board.Width, game.Board.Height];
             if (boardVersion != game.Board.Version)
             {

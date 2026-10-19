@@ -221,6 +221,7 @@ namespace Cubotris.Tests
             game.RotateClockwise();
             game.HardDrop();
             Assert.That(game.LinesCleared, Is.EqualTo(rows));
+            Assert.That(game.Score, Is.EqualTo(new[] { 0, 100, 300, 500, 800 }[rows]));
             Assert.That(Occupied(board), Is.EqualTo(4 - rows));
         }
 
