@@ -87,7 +87,6 @@ namespace Cubotris.UI
         {
             if (!game.IsPaused || optionsPanel.activeSelf || !CanTransition()) return;
             leaving = true;
-            game.SaveRecord();
             Time.timeScale = 1;
             SceneManager.LoadScene("MainMenu");
         }

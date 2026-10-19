@@ -19,6 +19,9 @@ namespace Cubotris.UI
         [SerializeField] private Selectable firstOption;
         [SerializeField] private Button optionsButton;
         [SerializeField] private Text bestScoreText;
+        [SerializeField] private Text bestPlayerText;
+        [SerializeField] private GameObject recordsPanel;
+        [SerializeField] private Button recordsButton;
         [SerializeField, Min(0.1f)] private float messageDuration = 3.5f;
         [SerializeField, Min(0.01f)] private float fadeDuration = 0.15f;
 
@@ -27,7 +30,7 @@ namespace Cubotris.UI
         private void OnEnable()
         {
             HideNotification();
-            if (bestScoreText != null) bestScoreText.text = BestScoreStore.Best.ToString();
+            RefreshBest();
         }
 
         private void Start()
@@ -38,12 +41,33 @@ namespace Cubotris.UI
 
         public void Play()
         {
+            if (recordsPanel.activeSelf || optionsPanel.activeSelf) return;
             SceneManager.LoadScene("Game");
+        }
+
+        public void RefreshBest()
+        {
+            if (bestScoreText != null) bestScoreText.text = BestScoreStore.Best.ToString();
+            if (bestPlayerText != null) bestPlayerText.text = BestScoreStore.PlayerName;
+        }
+        public void OpenRecords()
+        {
+            if (recordsPanel.activeSelf || optionsPanel.activeSelf) return;
+            HideNotification();
+            foreach (var section in mainMenuContent) section.SetActive(false);
+            recordsPanel.SetActive(true);
+        }
+        public void CloseRecords()
+        {
+            recordsPanel.SetActive(false);
+            foreach (var section in mainMenuContent) section.SetActive(true);
+            RefreshBest();
+            if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(recordsButton.gameObject);
         }
 
         public void OpenOptions()
         {
-            if (optionsPanel == null || optionsPanel.activeSelf)
+            if (optionsPanel == null || optionsPanel.activeSelf || recordsPanel.activeSelf)
                 return;
 
             StopAllCoroutines();

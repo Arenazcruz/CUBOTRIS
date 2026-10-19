@@ -25,6 +25,12 @@ namespace Cubotris.Gameplay
         private bool skipGravityOnce;
         private int transitionFrame = -1;
         private int timedFrame = -1;
+        private ScoreRecord finishedRecord;
+        public ScoreRecord FinishedRecord => Model == null || !Model.IsGameOver ? null : (finishedRecord ??= new ScoreRecord
+        {
+            id = System.Guid.NewGuid().ToString("N"), score = Model.Score,
+            survivalSeconds = Session.SurvivalSeconds, finishedAtUtc = System.DateTimeOffset.UtcNow.ToString("O")
+        }).Copy();
 
         private void Start()
         {
@@ -85,7 +91,6 @@ namespace Cubotris.Gameplay
         {
             if (Model == null || Model.IsGameOver || IsPaused == paused) return;
             if (paused) AdvanceActiveTime();
-            SaveRecord();
             IsPaused = paused;
             Time.timeScale = paused ? 0 : 1;
             ResetInput();
@@ -94,7 +99,7 @@ namespace Cubotris.Gameplay
 
         public void Restart()
         {
-            SaveRecord();
+            finishedRecord = null;
             Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings);
             timedFrame = Time.frameCount;
             faceTransition.Show(Session);
@@ -113,16 +118,14 @@ namespace Cubotris.Gameplay
             transitionFrame = Time.frameCount;
         }
 
-        public void SaveRecord() { if (Model != null) BestScoreStore.Record(Model.Score); }
-        private void OnApplicationPause(bool paused) { if (paused) SaveRecord(); }
-        private void OnApplicationQuit() { SaveRecord(); }
-        private void OnDestroy() { SaveRecord(); Time.timeScale = 1; }
+        private void OnDestroy() { Time.timeScale = 1; }
 
         private void Refresh()
         {
             if (lastRevision == Model.Revision) return;
             if (!IsTransitioning) boardView.Render(Model);
-            SaveRecord();
+            // Freeze the timestamp and values when the run ends, before showing its form.
+            if (Model.IsGameOver) _ = FinishedRecord;
             linesText.text = Model.LinesCleared.ToString("00");
             scoreText.text = Model.Score.ToString();
             stateText.text = Model.IsGameOver ? "PARTIDA TERMINADA" : IsPaused ? "EN PAUSA" : IsTransitioning ? "CAMBIANDO CARA" : "EN JUEGO";

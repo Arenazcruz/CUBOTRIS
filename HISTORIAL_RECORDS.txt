@@ -1,0 +1,75 @@
+CUBOTRIS — Historial local (Fase 05.4)
+
+DATOS Y UBICACIÓN
+El historial se guarda en Application.persistentDataPath/records.json.
+En Windows, con los ajustes actuales del proyecto:
+%USERPROFILE%/AppData/LocalLow/DefaultCompany/CUBOTRIS/records.json
+Los archivos de partidas no pertenecen al repositorio ni a Assets.
+No se utiliza internet, cuentas ni servicios externos.
+
+Cada registro contiene id (GUID), playerName, score, survivalSeconds y
+finishedAtUtc (fecha ISO 8601 UTC). La interfaz muestra la fecha en hora local.
+La clasificación ordena por puntuación descendente, tiempo descendente,
+fecha más antigua primero y, ante un empate exacto, identificador ordinal.
+Ocho filas por página; no existe un límite de diez registros almacenados.
+
+GUARDADO
+GameController captura un resultado inmutable al terminar la partida.
+GUARDAR RÉCORD valida el nombre y escribe ese resultado. El nombre es obligatorio,
+se recortan los espacios externos, admite hasta 20 caracteres, letras, números
+y espacios. No se admiten signos, controles ni saltos de línea.
+El mismo identificador no puede guardarse dos veces.
+REINTENTAR o MENÚ PRINCIPAL, antes de guardar, ofrece GUARDAR / DESCARTAR / CANCELAR.
+GUARDAR vuelve al campo de nombre; después de guardar correctamente continúa
+con la salida solicitada. DESCARTAR continúa sin añadir registro. CANCELAR
+permanece en Game Over. Un reinicio desde pausa no registra una partida activa.
+
+PERSISTENCIA Y RECUPERACIÓN
+Se escribe y vacía records.json.tmp antes de sustituir el archivo principal.
+La sustitución conserva la versión válida anterior en records.json.bak.
+Una escritura fallida no cambia la lista en memoria ni confirma éxito al usuario.
+Si el principal está dañado, se conserva como records.json.corrupt-<GUID> y se
+intenta recuperar la copia válida; si no existe, se inicia un historial vacío
+con aviso. La copia de seguridad puede contener registros de la versión anterior.
+El servicio registra los errores técnicos y la interfaz muestra un mensaje.
+No se ofrece sincronización concurrente entre varias instancias del juego.
+
+COMPATIBILIDAD CON PLAYERPREFS
+Al crear el JSON por primera vez se copia Cubotris.BestScore a
+historicalUnattributedScore. No se borra ni modifica la clave antigua.
+La marca antigua aparece exclusivamente en RÉCORDS como «Marca histórica sin
+nombre», separada de la clasificación. No se inventa nombre, duración ni partida.
+El mejor récord visible del menú y Game Over procede exclusivamente de los
+registros con nombre del JSON. Si no hay registros, es 0 / «Sin récords».
+No se vuelven a importar los valores antiguos al cargar un JSON existente.
+Borrar el primer puesto muestra al siguiente; BORRAR TODOS vacía la clasificación
+pero conserva la marca histórica no atribuida. Las preferencias de volumen
+permanecen intactas. Las partidas futuras sólo entran al historial al guardarse.
+
+NAVEGACIÓN Y COMPROBACIÓN MANUAL
+1. Inicia una partida, termina en Game Over y comprueba puntuación y tiempo.
+2. Entra al campo de nombre con ratón o flechas. Escribe Ana 7. Enter termina
+   la edición y selecciona GUARDAR RÉCORD; otro Enter guarda. El botón queda
+   desactivado y aparece la confirmación. Reintentar inicia una partida limpia.
+3. Termina otra partida sin guardar. Prueba CANCELAR, luego GUARDAR para
+   completar el nombre antes de salir. En otra partida prueba DESCARTAR.
+4. Abre RÉCORDS desde el menú. Selecciona filas con flechas o ratón. La fecha
+   aparece en el detalle. Con más de ocho registros, utiliza ANTERIOR/SIGUIENTE.
+5. Selecciona un registro y pulsa ELIMINAR SELECCIONADO. CANCELAR o ESC lo
+   conserva; ELIMINAR actualiza la lista y el mejor récord. Prueba BORRAR TODOS
+   y cancela primero; confirma sólo si quieres vaciar la clasificación.
+6. Cierra y vuelve a abrir Unity: los registros guardados deben persistir.
+7. Comprueba pausa, Opciones, volumen, las cuatro caras, basura, miniaturas,
+   siguiente pieza, ghost y controles. Ninguna regla de juego cambia.
+
+PRUEBAS
+ScoreHistoryTests usa directorios temporales para nombres, duplicados, orden,
+persistencia, archivos dañados, recuperación, borrado y fallos de escritura.
+HistoryIntegrationTests verifica formulario, navegación, confirmaciones,
+paginación, ratón, teclado, fallos de guardado y retorno a partida/menú.
+Las pruebas PlayMode sustituyen el servicio por un archivo aislado y restauran
+las preferencias; no escriben en el historial real del usuario.
+La entrada de caracteres TMP se simula con sus eventos Unity nativos; las
+flechas y Enter usan el Input System de la escena.
+Se incorporaron sólo los recursos esenciales de fuente y shader TMP instalados
+con Unity (incluida la licencia Liberation Sans), sin PNG nuevos de interfaz.

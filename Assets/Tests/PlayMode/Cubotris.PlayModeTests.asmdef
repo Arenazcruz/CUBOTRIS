@@ -1,5 +1,5 @@
 {
   "name": "Cubotris.PlayModeTests",
-  "references": ["Cubotris.Gameplay", "Unity.InputSystem", "Unity.ugui"],
+  "references": ["Cubotris.Gameplay", "Unity.InputSystem", "Unity.ugui", "Unity.TextMeshPro"],
   "optionalUnityReferences": ["TestAssemblies"]
 }

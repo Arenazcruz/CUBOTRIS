@@ -12,9 +12,12 @@ using UnityEngine.UI;
 
 namespace Cubotris.Tests
 {
-    public sealed class GameIntegrationTests
+    public sealed partial class GameIntegrationTests
     {
         private Keyboard keyboard;
+        private object previousHistory;
+        private string historyDirectory;
+        private static readonly System.Reflection.FieldInfo HistoryField = typeof(BestScoreStore).GetField("history", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
         private bool hadBestScore;
         private int bestScoreBefore;
         private InputSettings.BackgroundBehavior previousBackground;
@@ -25,6 +28,9 @@ namespace Cubotris.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            previousHistory = HistoryField.GetValue(null);
+            historyDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CubotrisTests-" + System.Guid.NewGuid().ToString("N"));
+            HistoryField.SetValue(null, new ScoreHistoryStore(System.IO.Path.Combine(historyDirectory, "records.json")));
             hadBestScore = PlayerPrefs.HasKey(BestScoreStore.Key);
             bestScoreBefore = PlayerPrefs.GetInt(BestScoreStore.Key);
             previousBackground = InputSystem.settings.backgroundBehavior;
@@ -46,6 +52,8 @@ namespace Cubotris.Tests
             Time.timeScale = 1;
             var live = Object.FindAnyObjectByType<GameController>();
             if (live != null) Object.DestroyImmediate(live.gameObject);
+            HistoryField.SetValue(null, previousHistory);
+            if (System.IO.Directory.Exists(historyDirectory)) System.IO.Directory.Delete(historyDirectory, true);
             Restore(BestScoreStore.Key, hadBestScore, bestScoreBefore);
             PlayerPrefs.Save();
             InputSystem.RemoveDevice(keyboard);
@@ -318,44 +326,26 @@ namespace Cubotris.Tests
         }
 
         [UnityTest]
-        public IEnumerator ScoreAndRecordUpdateImmediatelySurviveRestartAndAppearInMainMenu()
+        public IEnumerator ActiveScoreDoesNotCreateHistoryAndNamedRecordSurvivesRestartAndMenu()
         {
-            bool had = PlayerPrefs.HasKey(BestScoreStore.Key); int old = PlayerPrefs.GetInt(BestScoreStore.Key);
-            GameController game = null;
-            try
-            {
-                PlayerPrefs.DeleteKey(BestScoreStore.Key);
-                Assert.That(BestScoreStore.Best, Is.Zero);
-                game = Object.FindAnyObjectByType<GameController>();
-                for (int run = 1; run <= 2; run++)
-                {
-                    game.Model.Board.TryLock(TetrominoType.I, Enumerable.Range(0, 10).Where(x => !game.Model.Board[x, 0].HasValue).Select(x => new Vector2Int(x, 0)).ToArray());
-                    game.HardDrop(); yield return Settled(game);
-                    Assert.That(game.Model.LinesCleared, Is.EqualTo(run));
-                    Assert.That(game.Model.Score, Is.EqualTo(run * 100));
-                    Assert.That(BestScoreStore.Best, Is.EqualTo(run * 100));
-                    Assert.That(GameObject.Find("GameCanvas/GameInfoPanel/ScoreValue").GetComponent<Text>().text, Is.EqualTo((run * 100).ToString()));
-                }
-                ButtonAt("PauseButton").onClick.Invoke(); yield return null;
-                ButtonAt("PausePanel/PanelBackground/RestartButton").onClick.Invoke(); yield return null; yield return null;
-                Assert.That(game.Model.Score, Is.Zero);
-                Assert.That(BestScoreStore.Best, Is.EqualTo(200));
-                BestScoreStore.Record(100);
-                Assert.That(BestScoreStore.Best, Is.EqualTo(200));
-                ButtonAt("PauseButton").onClick.Invoke(); yield return null;
-                ButtonAt("PausePanel/PanelBackground/MainMenuButton").onClick.Invoke(); yield return null; yield return null;
-                Assert.That(Time.timeScale, Is.EqualTo(1));
-                Assert.That(GameObject.Find("Canvas/BestScorePanel/Value").GetComponent<Text>().text, Is.EqualTo("200"));
-                yield return SceneManager.LoadSceneAsync("MainMenu"); yield return null;
-                Assert.That(GameObject.Find("Canvas/BestScorePanel/Value").GetComponent<Text>().text, Is.EqualTo("200"));
-            }
-            finally
-            {
-                if (game != null) Object.DestroyImmediate(game.gameObject);
-                Restore(BestScoreStore.Key, had, old); PlayerPrefs.Save();
-            }
+            var game = Object.FindAnyObjectByType<GameController>();
+            game.Model.Board.TryLock(TetrominoType.I, Enumerable.Range(0, 10).Select(x => new Vector2Int(x, 0)).ToArray());
+            game.HardDrop(); yield return Settled(game);
+            Assert.That(game.Model.Score, Is.EqualTo(100));
+            Assert.That(BestScoreStore.History.Records.Count, Is.Zero, "An active run is not a finished named record");
+            Assert.That(GameObject.Find("GameCanvas/GameInfoPanel/ScoreValue").GetComponent<Text>().text, Is.EqualTo("100"));
+            yield return LoseGame(game);
+            SaveFinished(); yield return null; yield return null;
+            Assert.That(BestScoreStore.Best, Is.EqualTo(100));
+            SaveFinished(); yield return null; yield return null;
+            ButtonAt("GameOverNotice/PanelBackground/RetryButton").onClick.Invoke(); yield return null; yield return null;
+            Assert.That(game.Model.Score, Is.Zero);
+            Assert.That(BestScoreStore.Best, Is.EqualTo(100));
+            yield return Tap(Key.Escape);
+            ButtonAt("PausePanel/PanelBackground/MainMenuButton").onClick.Invoke(); yield return null; yield return null;
+            Assert.That(GameObject.Find("Canvas/BestScorePanel/Value").GetComponent<Text>().text, Is.EqualTo("100"));
+            Assert.That(GameObject.Find("Canvas/BestScorePanel/PlayerName").GetComponent<Text>().text, Is.EqualTo("Prueba"));
         }
-
         [UnityTest]
         public IEnumerator PointerCanClickPauseAndResumeThroughTheCanvas()
         {
@@ -419,7 +409,7 @@ namespace Cubotris.Tests
         [UnityTest]
         public IEnumerator GameOverKeyboardReturnsToMenuWithRecordAndPlayStartsAgain()
         {
-            PlayerPrefs.SetInt(BestScoreStore.Key, 800); PlayerPrefs.Save();
+            SeedRecord(800);
             var game = Object.FindAnyObjectByType<GameController>();
             yield return FinishScoredGame(game);
             Assert.That(GameObject.Find("GameCanvas/GameOverNotice/PanelBackground/BestScoreValue").GetComponent<Text>().text, Is.EqualTo("800"));
@@ -465,7 +455,7 @@ namespace Cubotris.Tests
             var retry = ButtonAt("GameOverNotice/PanelBackground/RetryButton");
             Assert.That(retry.interactable, Is.True);
             Assert.That(EventSystem.current.currentSelectedGameObject, Is.EqualTo(retry.gameObject));
-            retry.onClick.Invoke(); yield return null; yield return null;
+            SaveFinished(); yield return null; yield return null; retry.onClick.Invoke(); yield return null; yield return null;
             Assert.That(game.Model.IsGameOver, Is.False);
             Assert.That(game.Model.PiecesLocked, Is.Zero);
         }
@@ -478,6 +468,7 @@ namespace Cubotris.Tests
             yield return LoseGame(game);
             yield return null; yield return null;
             Assert.That(game.Model.IsGameOver, Is.True);
+            SaveFinished(); yield return null; yield return null;
         }
         [UnityTest]
         public IEnumerator PauseKeyboardVisitsEveryButtonAndBothSlidersWithoutMovingTheBoard()
@@ -588,6 +579,8 @@ namespace Cubotris.Tests
                 yield return Tap(Key.Enter);
                 Selected("Canvas/MenuButtons/OptionsButton");
                 yield return Tap(Key.UpArrow);
+                Selected("Canvas/MenuButtons/RecordsButton");
+                yield return Tap(Key.UpArrow);
                 yield return Tap(Key.Enter);
                 Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Game"));
                 Assert.That(EventSystem.current.sendNavigationEvents, Is.False);
@@ -688,7 +681,7 @@ namespace Cubotris.Tests
             var transition = Object.FindAnyObjectByType<FaceTransitionView>();
             var board = Object.FindAnyObjectByType<BoardView>();
             var origin = board.transform.localPosition;
-            PlayerPrefs.SetInt(BestScoreStore.Key, 900); PlayerPrefs.Save();
+            SeedRecord(900);
             for (int i = 0; i < 3; i++) { game.HardDrop(); yield return Settled(game); }
             game.HardDrop(); yield return new WaitForSeconds(0.08f);
             yield return Tap(Key.Escape);
@@ -880,6 +873,7 @@ namespace Cubotris.Tests
             for (int i = 0; i < 4; i++) AssertMini(minis[i], game.Session.Faces[i]);
             Assert.That(preview.Find("PiecePreview").GetComponentsInChildren<Image>().All(i => !i.enabled), Is.True);
             Assert.That(GameObject.Find("BoardRoot/GhostPieceRoot").GetComponentsInChildren<SpriteRenderer>().All(r => !r.enabled), Is.True);
+            SaveFinished(); yield return null; yield return null;
             ButtonAt("GameOverNotice/PanelBackground/RetryButton").onClick.Invoke(); yield return null; yield return null;
             for (int i = 0; i < 4; i++) AssertMini(minis[i], game.Session.Faces[i]);
             AssertGhost(game, GameObject.Find("BoardRoot/GhostPieceRoot").GetComponentsInChildren<SpriteRenderer>());
@@ -975,7 +969,7 @@ namespace Cubotris.Tests
         public IEnumerator GarbageOverflowFreezesFinalTimeAndRetryAndPauseRestartResetEveryClock()
         {
             var game = Object.FindAnyObjectByType<GameController>();
-            PlayerPrefs.SetInt(BestScoreStore.Key, 900); PlayerPrefs.Save();
+            SeedRecord(900);
             game.HardDrop(); yield return Settled(game);
             var board = game.Model.Board;
             Assert.That(board.TryLock(TetrominoType.Z, new[] { new Vector2Int(0, 19) }), Is.True);
@@ -996,6 +990,7 @@ namespace Cubotris.Tests
             yield return new WaitForSecondsRealtime(0.2f);
             Assert.That(game.Session.SurvivalSeconds, Is.EqualTo(final));
             Assert.That(game.Model.Revision, Is.EqualTo(revision));
+            SaveFinished(); yield return null; yield return null;
             ButtonAt("GameOverNotice/PanelBackground/RetryButton").onClick.Invoke();
             AssertFreshClocks(game);
             yield return null; yield return null;
@@ -1047,6 +1042,19 @@ namespace Cubotris.Tests
             Assert.That(game.Model.IsGameOver, Is.False);
             Assert.That(game.Model.HasActivePiece, Is.True);
             Assert.That(Time.timeScale, Is.EqualTo(1));
+        }
+
+        private static void SeedRecord(int score)
+        {
+            Assert.That(BestScoreStore.History.TryAdd(new ScoreRecord { id = System.Guid.NewGuid().ToString("N"), score = score,
+                survivalSeconds = 10, finishedAtUtc = System.DateTimeOffset.UtcNow.ToString("O") }, "Anterior", out _), Is.True);
+        }
+        private static void SaveFinished()
+        {
+            var field = GameObject.Find("GameCanvas/GameOverNotice/PanelBackground/PlayerNameInput").GetComponent<TMPro.TMP_InputField>();
+            if (!field.interactable) return;
+            field.text = "Prueba";
+            ButtonAt("GameOverNotice/PanelBackground/SaveButton").onClick.Invoke();
         }
 
         private static void AssertMini(MiniBoardView mini, BoardState board)

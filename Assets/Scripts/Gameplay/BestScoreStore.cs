@@ -5,14 +5,10 @@ namespace Cubotris.Gameplay
     public static class BestScoreStore
     {
         public const string Key = "Cubotris.BestScore";
-        public static int Best => Mathf.Max(0, PlayerPrefs.GetInt(Key, 0));
-
-        public static void Record(int score)
-        {
-            if (score <= Best) return;
-            PlayerPrefs.SetInt(Key, score);
-            // Persist each improvement, including if the application closes mid-game.
-            PlayerPrefs.Save();
-        }
+        private static ScoreHistoryStore history;
+        public static ScoreHistoryStore History => history ??= new ScoreHistoryStore(
+            System.IO.Path.Combine(Application.persistentDataPath, "records.json"), PlayerPrefs.GetInt(Key, 0));
+        public static int Best => History.Best?.score ?? 0;
+        public static string PlayerName => History.Best?.playerName ?? "Sin récords";
     }
 }
