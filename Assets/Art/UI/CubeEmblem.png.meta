@@ -1,0 +1,834 @@
+fileFormatVersion: 2
+guid: 67e00f6a9b7507c4fa5611116dac0914
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8169015602753105127
+    second: CubeEmblem_0
+  - first:
+      213: 5510532768915095703
+    second: CubeEmblem_1
+  - first:
+      213: -1603768883851113951
+    second: CubeEmblem_2
+  - first:
+      213: 7134579025414936957
+    second: CubeEmblem_3
+  - first:
+      213: -2897567587801858119
+    second: CubeEmblem_4
+  - first:
+      213: -2356979555248938355
+    second: CubeEmblem_5
+  - first:
+      213: 6645939664174582560
+    second: CubeEmblem_6
+  - first:
+      213: -3169879764677802285
+    second: CubeEmblem_7
+  - first:
+      213: 7215452344932770278
+    second: CubeEmblem_8
+  - first:
+      213: -1966813941089912013
+    second: CubeEmblem_9
+  - first:
+      213: 5620012501397941244
+    second: CubeEmblem_10
+  - first:
+      213: -3888239264222157721
+    second: CubeEmblem_11
+  - first:
+      213: 4720415292001952924
+    second: CubeEmblem_12
+  - first:
+      213: -4593696706041075116
+    second: CubeEmblem_13
+  - first:
+      213: -4217476490699116755
+    second: CubeEmblem_14
+  - first:
+      213: 7607300563594523198
+    second: CubeEmblem_15
+  - first:
+      213: -8327947918687191764
+    second: CubeEmblem_16
+  - first:
+      213: 8701249924710994397
+    second: CubeEmblem_17
+  - first:
+      213: -254406567734810266
+    second: CubeEmblem_18
+  - first:
+      213: 5884269647950684474
+    second: CubeEmblem_19
+  - first:
+      213: 7660142951318198458
+    second: CubeEmblem_20
+  - first:
+      213: 3998762980710782695
+    second: CubeEmblem_21
+  - first:
+      213: -6470052461850217416
+    second: CubeEmblem_22
+  - first:
+      213: -8556728658150407445
+    second: CubeEmblem_23
+  - first:
+      213: -5708729683031793112
+    second: CubeEmblem_24
+  - first:
+      213: -1844267752924392481
+    second: CubeEmblem_25
+  - first:
+      213: 3276691189178163114
+    second: CubeEmblem_26
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: CubeEmblem_0
+      rect:
+        serializedVersion: 2
+        x: 122
+        y: 369
+        width: 130
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ece8bec86c2e5170800000000000000
+      internalID: 8169015602753105127
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_1
+      rect:
+        serializedVersion: 2
+        x: 191
+        y: 405
+        width: 130
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 79085567b58597c40800000000000000
+      internalID: 5510532768915095703
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_2
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 369
+        width: 130
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12aca3082b44eb9e0800000000000000
+      internalID: -1603768883851113951
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_3
+      rect:
+        serializedVersion: 2
+        x: 50
+        y: 255
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d795fcfa2dd130360800000000000000
+      internalID: 7134579025414936957
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_4
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 332
+        width: 128
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9bf726081a5c9c7d0800000000000000
+      internalID: -2897567587801858119
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_5
+      rect:
+        serializedVersion: 2
+        x: 122
+        y: 295
+        width: 130
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d82678215935a4fd0800000000000000
+      internalID: -2356979555248938355
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_6
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 332
+        width: 128
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 02b0ec1b9ee1b3c50800000000000000
+      internalID: 6645939664174582560
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_7
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 295
+        width: 130
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d64ea516235204d0800000000000000
+      internalID: -3169879764677802285
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_8
+      rect:
+        serializedVersion: 2
+        x: 330
+        y: 332
+        width: 128
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6e12a79bdaf622460800000000000000
+      internalID: 7215452344932770278
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_9
+      rect:
+        serializedVersion: 2
+        x: 395
+        y: 255
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 33bbc06242974b4e0800000000000000
+      internalID: -1966813941089912013
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_10
+      rect:
+        serializedVersion: 2
+        x: 50
+        y: 177
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cfb241b089b4efd40800000000000000
+      internalID: 5620012501397941244
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_11
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 218
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 764ef4e6df23a0ac0800000000000000
+      internalID: -3888239264222157721
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_12
+      rect:
+        serializedVersion: 2
+        x: 188
+        y: 182
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c942910c2b8428140800000000000000
+      internalID: 4720415292001952924
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_13
+      rect:
+        serializedVersion: 2
+        x: 191
+        y: 259
+        width: 130
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 45a2a8e2f29ef30c0800000000000000
+      internalID: -4593696706041075116
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_14
+      rect:
+        serializedVersion: 2
+        x: 257
+        y: 182
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2f61531a738875c0800000000000000
+      internalID: -4217476490699116755
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_15
+      rect:
+        serializedVersion: 2
+        x: 326
+        y: 218
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e323ea0be8f829960800000000000000
+      internalID: 7607300563594523198
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_16
+      rect:
+        serializedVersion: 2
+        x: 395
+        y: 177
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c2d32b6cd7f2d6c80800000000000000
+      internalID: -8327947918687191764
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_17
+      rect:
+        serializedVersion: 2
+        x: 50
+        y: 98
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd11b4094bc01c870800000000000000
+      internalID: 8701249924710994397
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_18
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 140
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 669e3a5139a287cf0800000000000000
+      internalID: -254406567734810266
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_19
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 62
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a31a6b0911029a150800000000000000
+      internalID: 5884269647950684474
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_20
+      rect:
+        serializedVersion: 2
+        x: 188
+        y: 103
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab89806dd6b4e4a60800000000000000
+      internalID: 7660142951318198458
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_21
+      rect:
+        serializedVersion: 2
+        x: 257
+        y: 103
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e69f3e9eb57e7730800000000000000
+      internalID: 3998762980710782695
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_22
+      rect:
+        serializedVersion: 2
+        x: 326
+        y: 140
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 834b645d091c536a0800000000000000
+      internalID: -6470052461850217416
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_23
+      rect:
+        serializedVersion: 2
+        x: 326
+        y: 62
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be24a83fe94604980800000000000000
+      internalID: -8556728658150407445
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_24
+      rect:
+        serializedVersion: 2
+        x: 395
+        y: 98
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8226924799486c0b0800000000000000
+      internalID: -5708729683031793112
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_25
+      rect:
+        serializedVersion: 2
+        x: 188
+        y: 25
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fd3db340048d766e0800000000000000
+      internalID: -1844267752924392481
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CubeEmblem_26
+      rect:
+        serializedVersion: 2
+        x: 257
+        y: 25
+        width: 67
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aafdd91a645297d20800000000000000
+      internalID: 3276691189178163114
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      CubeEmblem_0: 8169015602753105127
+      CubeEmblem_1: 5510532768915095703
+      CubeEmblem_10: 5620012501397941244
+      CubeEmblem_11: -3888239264222157721
+      CubeEmblem_12: 4720415292001952924
+      CubeEmblem_13: -4593696706041075116
+      CubeEmblem_14: -4217476490699116755
+      CubeEmblem_15: 7607300563594523198
+      CubeEmblem_16: -8327947918687191764
+      CubeEmblem_17: 8701249924710994397
+      CubeEmblem_18: -254406567734810266
+      CubeEmblem_19: 5884269647950684474
+      CubeEmblem_2: -1603768883851113951
+      CubeEmblem_20: 7660142951318198458
+      CubeEmblem_21: 3998762980710782695
+      CubeEmblem_22: -6470052461850217416
+      CubeEmblem_23: -8556728658150407445
+      CubeEmblem_24: -5708729683031793112
+      CubeEmblem_25: -1844267752924392481
+      CubeEmblem_26: 3276691189178163114
+      CubeEmblem_3: 7134579025414936957
+      CubeEmblem_4: -2897567587801858119
+      CubeEmblem_5: -2356979555248938355
+      CubeEmblem_6: 6645939664174582560
+      CubeEmblem_7: -3169879764677802285
+      CubeEmblem_8: 7215452344932770278
+      CubeEmblem_9: -1966813941089912013
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
