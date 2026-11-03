@@ -8,12 +8,14 @@ public class Board : MonoBehaviour
 
     [SerializeField] private SpriteRenderer blockPrefab;
 
-    // Solo contiene bloques fijados. La pieza activa se comprueba por separado.
+   
     private readonly Transform[,] grid = new Transform[Width, Height];
     private Spawner spawner;
 
     public bool IsGameOver { get; private set; }
     public Piece ActivePiece { get; private set; }
+
+        public event System.Action PiezaFijada;
 
     private void Start()
     {
@@ -28,7 +30,7 @@ public class Board : MonoBehaviour
         SpawnNextPiece();
     }
 
-    // Cada celda mide una unidad; el origen del tablero es su esquina inferior izquierda.
+    
     public Vector3 CellToLocalPosition(Vector2Int cell)
     {
         return new Vector3(cell.x + 0.5f, cell.y + 0.5f, 0f);
@@ -54,7 +56,7 @@ public class Board : MonoBehaviour
         if (IsGameOver || piece != ActivePiece)
             return;
 
-        // Los bloques pasan a pertenecer al tablero antes de destruir la pieza vacia.
+        
         for (int i = 0; i < piece.Cells.Length; i++)
         {
             Vector2Int cell = piece.Position + piece.Cells[i];
@@ -66,6 +68,7 @@ public class Board : MonoBehaviour
 
         ActivePiece = null;
         Destroy(piece.gameObject);
+        PiezaFijada?.Invoke();
         ClearLines();
         SpawnNextPiece();
     }
@@ -101,7 +104,7 @@ public class Board : MonoBehaviour
             for (int x = 0; x < Width; x++)
                 grid[x, Height - 1] = null;
 
-            // Revisar otra vez la misma fila permite eliminar varias lineas juntas.
+            
         }
     }
 
