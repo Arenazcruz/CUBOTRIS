@@ -112,3 +112,8 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Local score history and recovery copies (normally outside the project)
+records.json
+records.json.bak
+records.json.corrupt-*
