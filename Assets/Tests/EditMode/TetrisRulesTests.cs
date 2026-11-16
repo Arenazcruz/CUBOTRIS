@@ -138,6 +138,36 @@ namespace Cubotris.Tests
         }
 
         [Test]
+        public void SameShapeGetsDifferentColorsAndLockedBlocksKeepTheirColor()
+        {
+            var game = new TetrisGame(source: new Sequence(Enumerable.Repeat(TetrominoType.O, 20).ToArray()));
+            var colors = new HashSet<Color>();
+            for (int piece = 0; piece < 8; piece++)
+            {
+                var color = game.Active.Color;
+                colors.Add(color);
+                var cells = game.Active.Cells;
+                game.HardDrop();
+                foreach (var cell in cells)
+                    Assert.That(game.Board.BlockColorAt(cell.x, cell.y), Is.EqualTo(color));
+            }
+            Assert.That(colors.Count, Is.GreaterThan(1));
+        }
+
+        [Test]
+        public void ClearingRowsMovesColorsAlongWithRemainingBlocks()
+        {
+            var board = new BoardState(4, 4);
+            var clearedRowColor = new Color(1, 0, 0);
+            var remainingBlockColor = new Color(0, 1, 0);
+            board.TryLock(TetrominoType.I, Enumerable.Range(0, 4).Select(x => new Vector2Int(x, 0)).ToArray(), clearedRowColor);
+            board.TryLock(TetrominoType.T, new[] { new Vector2Int(2, 1) }, remainingBlockColor);
+
+            Assert.That(board.ClearFullRows(), Is.EqualTo(1));
+            Assert.That(board.BlockColorAt(2, 0), Is.EqualTo(remainingBlockColor));
+        }
+
+        [Test]
         public void HardDropLandsAboveOccupiedCellsWithoutOverlap()
         {
             var board = new BoardState();

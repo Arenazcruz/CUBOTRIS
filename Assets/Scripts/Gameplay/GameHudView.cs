@@ -22,6 +22,7 @@ namespace Cubotris.Gameplay
         private TetrominoType? shownPiece;
         private bool hasPreview;
         private int shownFace = -1;
+        private Color? shownPieceColor;
 
         private void LateUpdate()
         {
@@ -64,9 +65,11 @@ namespace Cubotris.Gameplay
                 }
             }
             TetrominoType? nextPiece = session.Game.IsGameOver ? null : session.Game.NextPiece;
-            if (hasPreview && shownPiece == nextPiece) return;
+            Color? nextPieceColor = nextPiece.HasValue ? session.Game.NextPieceColor : (Color?)null;
+            if (hasPreview && shownPiece == nextPiece && shownPieceColor == nextPieceColor) return;
             hasPreview = true;
             shownPiece = nextPiece;
+            shownPieceColor = nextPieceColor;
             foreach (var block in nextBlocks) block.enabled = nextPiece.HasValue;
             if (!nextPiece.HasValue) return;
             var cells = TetrominoData.Cells(nextPiece.Value, 0, Vector2Int.zero);
@@ -76,6 +79,7 @@ namespace Cubotris.Gameplay
             for (int i = 0; i < nextBlocks.Length; i++)
             {
                 nextBlocks[i].sprite = pieceSprites[(int)nextPiece.Value];
+                nextBlocks[i].color = nextPieceColor.Value;
                 nextBlocks[i].rectTransform.anchoredPosition = ((Vector2)cells[i] - center) * previewCellSize;
                 nextBlocks[i].rectTransform.sizeDelta = Vector2.one * previewCellSize * 0.94f;
             }

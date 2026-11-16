@@ -27,7 +27,7 @@ namespace Cubotris.Gameplay
             {
                 var block = ghostBlocks[i];
                 if (block == null) continue;
-                SetBlock(block, landing.Value.Type, cells[i]);
+                SetBlock(block, landing.Value.Type, cells[i], landing.Value.Color);
                 block.color = new Color(0.85f, 0.95f, 1, ghostOpacity);
                 block.enabled = true;
             }
@@ -51,7 +51,7 @@ namespace Cubotris.Gameplay
                         if (type.HasValue)
                         {
                             if (placedBlocks[x, y] == null) placedBlocks[x, y] = Instantiate(blockPrefab, placedBlocksRoot);
-                            SetBlock(placedBlocks[x, y], type.Value, new Vector2Int(x, y));
+                            SetBlock(placedBlocks[x, y], type.Value, new Vector2Int(x, y), board.BlockColorAt(x, y) ?? Color.white);
                         }
                         else if (placedBlocks[x, y] != null)
                         {
@@ -68,14 +68,14 @@ namespace Cubotris.Gameplay
             {
                 if (activeBlocks[i] == null) activeBlocks[i] = Instantiate(blockPrefab, activePieceRoot);
                 activeBlocks[i].enabled = active.HasValue;
-                if (activeBlocks[i].enabled) SetBlock(activeBlocks[i], active.Value.Type, positions[i]);
+                if (activeBlocks[i].enabled) SetBlock(activeBlocks[i], active.Value.Type, positions[i], active.Value.Color);
             }
         }
 
-        private void SetBlock(SpriteRenderer renderer, TetrominoType type, Vector2Int cell)
+        private void SetBlock(SpriteRenderer renderer, TetrominoType type, Vector2Int cell, Color color)
         {
             renderer.sprite = pieceSprites[(int)type];
-            renderer.color = Color.white;
+            renderer.color = color;
             renderer.transform.localPosition = new Vector3(cell.x + 0.5f, cell.y + 0.5f, 0);
             var size = renderer.sprite.bounds.size;
             renderer.transform.localScale = new Vector3(blockFill / size.x, blockFill / size.y, 1);

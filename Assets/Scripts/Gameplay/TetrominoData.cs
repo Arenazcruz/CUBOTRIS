@@ -43,13 +43,20 @@ namespace Cubotris.Gameplay
         public TetrominoType Type { get; }
         public int Rotation { get; }
         public Vector2Int Position { get; }
+        public Color Color { get; }
         public Vector2Int[] Cells => TetrominoData.Cells(Type, Rotation, Position);
 
         public ActivePiece(TetrominoType type, int rotation, Vector2Int position)
+            : this(type, rotation, position, UnityEngine.Color.white)
+        {
+        }
+
+        public ActivePiece(TetrominoType type, int rotation, Vector2Int position, Color color)
         {
             Type = type;
             Rotation = rotation;
             Position = position;
+            Color = color;
         }
     }
 }
