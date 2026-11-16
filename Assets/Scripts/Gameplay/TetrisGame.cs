@@ -15,6 +15,16 @@ namespace Cubotris.Gameplay
 
     public sealed class TetrisGame
     {
+        private static readonly Color[] PieceColors =
+        {
+            new Color32(0, 210, 255, 255),
+            new Color32(255, 75, 120, 255),
+            new Color32(255, 205, 55, 255),
+            new Color32(110, 230, 120, 255),
+            new Color32(175, 115, 255, 255),
+            new Color32(255, 130, 45, 255),
+            new Color32(70, 145, 255, 255)
+        };
         private static readonly Vector2Int[] Kicks =
         {
             Vector2Int.zero, Vector2Int.left, Vector2Int.right,
@@ -25,6 +35,9 @@ namespace Cubotris.Gameplay
         private readonly FallSettings settings;
         private readonly Func<BoardState> nextBoard;
         private readonly Func<bool> afterLock;
+        private readonly System.Random colorRandom = new System.Random();
+        private int lastPieceColorIndex = -1;
+        private Color nextPieceColor;
         private float fallTime;
         private bool wasSoftDropping;
 
@@ -37,6 +50,7 @@ namespace Cubotris.Gameplay
         public int PiecesLocked { get; private set; }
         public int Revision { get; private set; }
         public TetrominoType NextPiece => source.Peek();
+        public Color NextPieceColor => nextPieceColor;
         public float GravityInterval => Mathf.Max(0.01f, settings.minimumInterval,
             settings.initialInterval * Mathf.Pow(Mathf.Clamp(settings.speedMultiplier, 0.1f, 1f), LinesCleared / Mathf.Max(1, settings.linesPerStep)));
 
@@ -47,6 +61,7 @@ namespace Cubotris.Gameplay
             this.settings = settings ?? new FallSettings();
             this.nextBoard = nextBoard;
             this.afterLock = afterLock;
+            nextPieceColor = RandomPieceColor();
             Spawn();
         }
 
@@ -128,7 +143,7 @@ namespace Cubotris.Gameplay
 
         private void LockAndSpawn()
         {
-            if (!Board.TryLock(Active.Type, Active.Cells))
+            if (!Board.TryLock(Active.Type, Active.Cells, Active.Color))
             {
                 EndGame();
                 return;
@@ -145,10 +160,19 @@ namespace Cubotris.Gameplay
 
         private void Spawn()
         {
-            Active = new ActivePiece(source.Next(), 0, new Vector2Int(Board.Width / 2 - 1, Board.Height - 2));
+            Active = new ActivePiece(source.Next(), 0, new Vector2Int(Board.Width / 2 - 1, Board.Height - 2), nextPieceColor);
+            nextPieceColor = RandomPieceColor();
             HasActivePiece = Board.CanPlace(Active.Cells);
             if (!HasActivePiece) EndGame();
             Revision++;
+        }
+
+        private Color RandomPieceColor()
+        {
+            int colorIndex = colorRandom.Next(PieceColors.Length - (lastPieceColorIndex < 0 ? 0 : 1));
+            if (lastPieceColorIndex >= 0 && colorIndex >= lastPieceColorIndex) colorIndex++;
+            lastPieceColorIndex = colorIndex;
+            return PieceColors[colorIndex];
         }
 
         private void EndGame()

@@ -34,10 +34,12 @@ namespace Cubotris.Tests
             for (int i = 0; i < 20; i++)
             {
                 var next = session.Game.NextPiece;
+                var nextColor = session.Game.NextPieceColor;
                 for (int read = 0; read < 100; read++) Assert.That(session.Game.NextPiece, Is.EqualTo(next));
                 session.Game.HardDrop();
                 Assert.That(session.Game.IsGameOver, Is.False);
                 Assert.That(session.Game.Active.Type, Is.EqualTo(next));
+                Assert.That(session.Game.Active.Color, Is.EqualTo(nextColor));
                 Assert.That(session.ActiveFace, Is.EqualTo((i + 1) % 4));
             }
         }
