@@ -26,6 +26,7 @@ namespace Cubotris.UI
         [SerializeField, Min(0.01f)] private float fadeDuration = 0.15f;
 
         private Coroutine notificationRoutine;
+        public Text modeText;
 
         private void OnEnable()
         {
@@ -41,12 +42,13 @@ namespace Cubotris.UI
 
         public void Play()
         {
-            if (recordsPanel.activeSelf || optionsPanel.activeSelf) return;
+            if (recordsPanel.activeSelf || optionsPanel.activeSelf || SettingsOverlay.OpenCount>0) return;
             SceneManager.LoadScene("Game");
         }
 
         public void RefreshBest()
         {
+            if (modeText != null) modeText.text = "MODO: "+DifficultyRules.Label(GameSelection.Mode);
             if (bestScoreText != null) bestScoreText.text = BestScoreStore.Best.ToString();
             if (bestPlayerText != null) bestPlayerText.text = BestScoreStore.PlayerName;
         }

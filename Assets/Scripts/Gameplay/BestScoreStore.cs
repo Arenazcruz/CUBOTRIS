@@ -8,7 +8,8 @@ namespace Cubotris.Gameplay
         private static ScoreHistoryStore history;
         public static ScoreHistoryStore History => history ??= new ScoreHistoryStore(
             System.IO.Path.Combine(Application.persistentDataPath, "records.json"), PlayerPrefs.GetInt(Key, 0));
-        public static int Best => History.Best?.score ?? 0;
-        public static string PlayerName => History.Best?.playerName ?? "Sin récords";
+        public static int Best => BestFor(GameSelection.Mode);
+        public static int BestFor(DifficultyMode mode) => History.BestFor(mode)?.score ?? 0;
+        public static string PlayerName => History.BestFor(GameSelection.Mode)?.playerName ?? "Sin récords";
     }
 }

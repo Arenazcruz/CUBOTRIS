@@ -19,9 +19,13 @@ namespace Cubotris.UI
         private string selectedId, deletingId;
         private bool deletingAll;
         private ScoreHistoryStore Store => BestScoreStore.History;
+        public Button modeButton;
+        private DifficultyMode mode;
 
         private void OnEnable()
-        { page = 0; selectedId = null; statusText.text = Store.Notice ?? ""; SetConfirmation(false); Refresh(); FocusFirst(); }
+        { mode=GameSelection.Mode;page = 0; selectedId = null; statusText.text = Store.Notice ?? ""; SetConfirmation(false); Refresh(); FocusFirst(); }
+        public void CycleMode()
+        { if(!Allowed() || confirmation.activeSelf)return;mode=(DifficultyMode)(((int)mode+1)%3);page=0;Refresh();Select(modeButton); }
         private void Update()
         {
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -29,7 +33,8 @@ namespace Cubotris.UI
         }
         public void Refresh()
         {
-            var records = Store.Records;
+            var records = Store.RecordsFor(mode);
+            if(modeButton!=null)modeButton.GetComponentInChildren<Text>().text="MODO: "+DifficultyRules.Label(mode)+"  >";
             int pages = Math.Max(1, (records.Count + rows.Length - 1) / rows.Length);
             page = Mathf.Clamp(page, 0, pages - 1);
             pageText.text = $"PÁGINA {page + 1} / {pages} · {records.Count} REGISTROS";
@@ -55,6 +60,7 @@ namespace Cubotris.UI
             if (records.Count > 0) navigation.Add(deleteButton);
             if (clearButton.interactable) navigation.Add(clearButton);
             navigation.Add(backButton);
+            if(modeButton!=null)navigation.Add(modeButton);
             for (int i = 0; i < navigation.Count; i++)
                 navigation[i].navigation = new Navigation { mode = Navigation.Mode.Explicit,
                     selectOnUp = navigation[(i + navigation.Count - 1) % navigation.Count], selectOnDown = navigation[(i + 1) % navigation.Count],
@@ -77,14 +83,14 @@ namespace Cubotris.UI
         public void DeleteSelected()
         { if (selectedId == null || !Allowed() || confirmation.activeSelf) return; deletingId = selectedId; deletingAll = false; Ask("¿Seguro que quieres eliminar este récord?"); }
         public void ClearAll()
-        { if (!Allowed() || confirmation.activeSelf || Store.Records.Count == 0) return; deletingAll = true; Ask("¿Seguro que quieres borrar TODOS los récords?\nEsta acción no se puede deshacer."); }
+        { if (!Allowed() || confirmation.activeSelf || Store.RecordsFor(mode).Count == 0) return; deletingAll = true; Ask("¿Borrar los récords de "+DifficultyRules.Label(mode)+"?\nLos otros modos se conservan. No se puede deshacer."); }
         private void Ask(string message)
         { confirmationText.text = message; SetConfirmation(true); Select(cancelButton); }
         public void Confirm()
         {
             if (!confirmation.activeSelf || !Allowed()) return;
             string error;
-            bool success = deletingAll ? Store.TryClear(out error) : Store.TryDelete(deletingId, out error);
+            bool success = deletingAll ? Store.TryClear(mode,out error) : Store.TryDelete(deletingId, out error);
             if (!success) { confirmationText.text = error; return; }
             SetConfirmation(false); statusText.text = deletingAll ? "Historial eliminado." : "Récord eliminado.";
             Refresh(); menu.RefreshBest(); FocusFirst();

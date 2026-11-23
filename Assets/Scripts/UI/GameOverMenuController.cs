@@ -32,7 +32,7 @@ namespace Cubotris.UI
             if (shownId != result.id) { playerNameInput.text = ""; shownId = result.id; }
             saved = BestScoreStore.History.Contains(result.id);
             finalScoreText.text = result.score.ToString();
-            bestScoreText.text = BestScoreStore.Best.ToString();
+            bestScoreText.text = BestScoreStore.BestFor(result.mode).ToString();
             survivalTimeText.text = GameHudView.FormatTime(result.survivalSeconds);
             statusText.text = saved ? "Récord guardado." : BestScoreStore.History.Notice ?? "Escribe tu nombre para registrar esta partida.";
             transitioning = false; destination = Destination.None; actionFrame = Time.frameCount;
@@ -60,7 +60,7 @@ namespace Cubotris.UI
             { statusText.text = error; Select(playerNameInput); playerNameInput.ActivateInputField(); return; }
             saved = true; statusText.text = "Récord guardado correctamente.";
             saveButton.interactable = playerNameInput.interactable = false;
-            bestScoreText.text = BestScoreStore.Best.ToString();
+            bestScoreText.text = BestScoreStore.BestFor(result.mode).ToString();
             if (destination != Destination.None) Continue(); else Select(retryButton);
         }
         public void Retry() => Request(Destination.Retry);
