@@ -23,6 +23,8 @@ namespace Cubotris.UI
         private void Update()
         {
             pauseButton.interactable = game.Model != null && !game.Model.IsGameOver && !leaving;
+            if(game.IsPaused && !pausePanel.activeSelf && !optionsPanel.activeSelf && SettingsOverlay.OpenCount==0)
+            {pausePanel.SetActive(true);Select(resumeButton);}
             if (SettingsOverlay.OpenCount == 0 && !ControlBindings.Capturing && Keyboard.current != null
                 && (Keyboard.current.escapeKey.wasPressedThisFrame || ControlBindings.Pressed(GameAction.Pause))) TogglePause();
             if (EventSystem.current != null)
@@ -88,6 +90,7 @@ namespace Cubotris.UI
         {
             if (!game.IsPaused || optionsPanel.activeSelf || !CanTransition()) return;
             leaving = true;
+            game.Abandon();
             Time.timeScale = 1;
             SceneManager.LoadScene("MainMenu");
         }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Cubotris.Gameplay
 {
     /// <summary>Four persistent boards, one active piece, one bag and shared progression.</summary>
-    public sealed class CubotrisSession
+    public sealed partial class CubotrisSession
     {
         public const int FaceCount = 4;
         public IReadOnlyList<BoardState> Faces { get; }
@@ -13,6 +13,11 @@ namespace Cubotris.Gameplay
         public double SurvivalSeconds { get; private set; }
         public DifficultyMode Mode { get; }
         public bool IsPractice { get; }
+        public string RunId { get; } = Guid.NewGuid().ToString("N");
+        private readonly double[] totalFaceTime = new double[FaceCount];
+        private readonly int[] totalFaceLines = new int[FaceCount];
+        public double TotalFaceSeconds(int face)=>totalFaceTime[face];
+        public int TotalFaceLines(int face)=>totalFaceLines[face];
         public const int RotationBonus = 400;
         public int CycleClearMask { get; private set; }
         public int CompletedRotations { get; private set; }
@@ -22,7 +27,7 @@ namespace Cubotris.Gameplay
         private readonly double[] elapsed = new double[FaceCount];
         private readonly double[] intervals = new double[FaceCount];
         private readonly int[] pendingRows = new int[FaceCount];
-        private readonly Random garbageRandom;
+        private readonly StatefulRandom garbageRandom;
 
         public CubotrisSession(IPieceSource source = null, FallSettings settings = null, GarbageSettings garbageSettings = null, int? garbageSeed = null, DifficultyMode mode = DifficultyMode.Normal, int practiceFace = -1)
         {
@@ -31,7 +36,7 @@ namespace Cubotris.Gameplay
             IsPractice=practiceFace>=0;ActiveFace=IsPractice?practiceFace:0;
             Mode=mode;
             garbageSettings ??= new GarbageSettings();
-            garbageRandom = garbageSeed.HasValue ? new Random(garbageSeed.Value) : new Random();
+            garbageRandom = new StatefulRandom(garbageSeed);
             var boards = new BoardState[FaceCount];
             for (int i = 0; i < boards.Length; i++)
             {
@@ -51,6 +56,7 @@ namespace Cubotris.Gameplay
         {
             if (seconds <= 0 || double.IsNaN(seconds) || double.IsInfinity(seconds) || Game.IsGameOver || !Game.HasActivePiece) return;
             SurvivalSeconds += seconds;
+            totalFaceTime[ActiveFace] += seconds;
             if (ActiveFace == 0 || double.IsInfinity(intervals[ActiveFace])) return;
             double total = elapsed[ActiveFace] + seconds;
             double completed = Math.Floor(total / intervals[ActiveFace]);
@@ -60,6 +66,7 @@ namespace Cubotris.Gameplay
 
         private bool ApplyPendingGarbage()
         {
+            totalFaceLines[ActiveFace] += Game.LastClearCount;
             if(!IsPractice)
             {
                 if(Game.LastClearCount>0)CycleClearMask|=1<<ActiveFace;

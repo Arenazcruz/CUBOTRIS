@@ -27,17 +27,29 @@ namespace Cubotris.UI
 
         private Coroutine notificationRoutine;
         public Text modeText;
+        public Button continueButton;
 
         private void OnEnable()
         {
             HideNotification();
             RefreshBest();
+            RefreshNavigation();
         }
 
         private void Start()
         {
             if (EventSystem.current != null && firstButton != null)
                 EventSystem.current.SetSelectedGameObject(firstButton.gameObject);
+        }
+
+        private void RefreshNavigation()
+        {
+            if(continueButton==null)return;
+            continueButton.interactable=GameSave.Store.HasSave;
+            var items=new System.Collections.Generic.List<Selectable>();
+            foreach(string name in new[]{"PlayButton","ContinueButton","ModeButton","RecordsButton","StatisticsButton","OptionsButton","ExitButton"})
+            {var t=firstButton.transform.parent.Find(name);if(t!=null){var b=t.GetComponent<Button>();if(b.interactable)items.Add(b);}}
+            for(int i=0;i<items.Count;i++)items[i].navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnUp=items[(i+items.Count-1)%items.Count],selectOnDown=items[(i+1)%items.Count],selectOnLeft=items[(i+items.Count-1)%items.Count],selectOnRight=items[(i+1)%items.Count]};
         }
 
         public void Play()

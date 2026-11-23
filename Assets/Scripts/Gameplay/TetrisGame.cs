@@ -13,7 +13,7 @@ namespace Cubotris.Gameplay
         [Min(1)] public int linesPerStep = 10;
     }
 
-    public sealed class TetrisGame
+    public sealed partial class TetrisGame
     {
         private static readonly Color[] PieceColors =
         {
@@ -35,7 +35,7 @@ namespace Cubotris.Gameplay
         private readonly FallSettings settings;
         private readonly Func<BoardState> nextBoard;
         private readonly Func<bool> afterLock;
-        private readonly System.Random colorRandom = new System.Random();
+        private readonly StatefulRandom colorRandom = new StatefulRandom();
         private int lastPieceColorIndex = -1;
         private Color nextPieceColor;
         private float fallTime;

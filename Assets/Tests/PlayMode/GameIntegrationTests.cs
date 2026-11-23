@@ -20,6 +20,9 @@ namespace Cubotris.Tests
         private bool hadMode;
         private int previousMode;
         private int previousPracticeFace;
+        private object previousSaveStore;
+        private CubotrisSession previousResume;
+        private static readonly System.Reflection.FieldInfo SaveStoreField=typeof(GameSave).GetField("store",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic);
         private object previousHistory;
         private string historyDirectory;
         private static readonly System.Reflection.FieldInfo HistoryField = typeof(BestScoreStore).GetField("history", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
@@ -41,6 +44,8 @@ namespace Cubotris.Tests
             previousHistory = HistoryField.GetValue(null);
             historyDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CubotrisTests-" + System.Guid.NewGuid().ToString("N"));
             HistoryField.SetValue(null, new ScoreHistoryStore(System.IO.Path.Combine(historyDirectory, "records.json")));
+            previousSaveStore=SaveStoreField.GetValue(null);previousResume=GameSave.ResumeSession;GameSave.ResumeSession=null;
+            SaveStoreField.SetValue(null,new SaveSlotStore(System.IO.Path.Combine(historyDirectory,"continue.json")));
             hadBestScore = PlayerPrefs.HasKey(BestScoreStore.Key);
             bestScoreBefore = PlayerPrefs.GetInt(BestScoreStore.Key);
             previousBackground = InputSystem.settings.backgroundBehavior;
@@ -67,6 +72,7 @@ namespace Cubotris.Tests
             var live = Object.FindAnyObjectByType<GameController>();
             if (live != null) Object.DestroyImmediate(live.gameObject);
             HistoryField.SetValue(null, previousHistory);
+            SaveStoreField.SetValue(null,previousSaveStore);GameSave.ResumeSession=previousResume;
             if (System.IO.Directory.Exists(historyDirectory)) System.IO.Directory.Delete(historyDirectory, true);
             Restore(BestScoreStore.Key, hadBestScore, bestScoreBefore);
             PlayerPrefs.Save();
@@ -531,6 +537,8 @@ namespace Cubotris.Tests
                 Assert.That(game.IsPaused, Is.False);
                 Assert.That(EventSystem.current.currentSelectedGameObject, Is.Null);
                 yield return Tap(Key.Escape);
+                yield return Tap(Key.UpArrow);
+                Selected("GameCanvas/PausePanel/PanelBackground/SaveButton");
                 yield return Tap(Key.UpArrow);
                 Selected("GameCanvas/PausePanel/PanelBackground/MainMenuButton");
                 yield return Tap(Key.Enter);

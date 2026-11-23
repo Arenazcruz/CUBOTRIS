@@ -8,15 +8,15 @@ namespace Cubotris.Gameplay
         TetrominoType Next();
     }
 
-    public sealed class SevenBag : IPieceSource
+    public sealed partial class SevenBag : IPieceSource
     {
-        private readonly Random random;
+        private readonly StatefulRandom random;
         private readonly TetrominoType[] bag = new TetrominoType[7];
         private int cursor = 7;
 
         public SevenBag(int? seed = null)
         {
-            random = seed.HasValue ? new Random(seed.Value) : new Random();
+            random = new StatefulRandom(seed);
         }
 
         public TetrominoType Next()
