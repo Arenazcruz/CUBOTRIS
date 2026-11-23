@@ -32,5 +32,14 @@ namespace Cubotris.Tests
             PlayerPrefs.SetString(ControlBindings.PreferencesKey, "invalid"); ControlBindings.Reload();
             Assert.That(ControlBindings.Validate(ControlBindings.Current, out _), Is.True);
         }
+        [Test] public void PreviousSixActionsKeepCustomKeysWhenHoldIsAdded()
+        {
+            var defaults=ControlBindings.Defaults();defaults[0].primary=Key.C;
+            string json="{\"bindings\":["+string.Join(",",System.Linq.Enumerable.Select(System.Linq.Enumerable.Take(defaults,6),b=>JsonUtility.ToJson(b)))+"]}";
+            PlayerPrefs.SetString(ControlBindings.PreferencesKey,json);ControlBindings.Reload();
+            Assert.That(ControlBindings.Current[0].primary,Is.EqualTo(Key.C));
+            Assert.That(ControlBindings.Current[6].primary,Is.Not.EqualTo(Key.C));
+            Assert.That(ControlBindings.Validate(ControlBindings.Current,out _),Is.True);
+        }
     }
 }

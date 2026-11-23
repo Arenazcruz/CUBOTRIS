@@ -38,6 +38,11 @@ namespace Cubotris.Gameplay
                 return;
             }
             controller.SoftDropHeld = ControlBindings.Held(GameAction.SoftDrop);
+            if (ControlBindings.Pressed(GameAction.Hold))
+            {
+                controller.Hold();
+                return;
+            }
             if (ControlBindings.Pressed(GameAction.HardDrop))
             {
                 controller.HardDrop();

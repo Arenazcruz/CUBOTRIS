@@ -61,6 +61,15 @@ namespace Cubotris.Gameplay
 
         public void Move(int direction) { if (AcceptsInput) Model.Move(direction); }
         public void Rotate() { if (AcceptsInput) Model.RotateClockwise(); }
+        public void Hold()
+        {
+            if (!AcceptsInput || !Model.CanHold) return;
+            AdvanceActiveTime();
+            Model.Hold();
+            ResetInput();
+            skipGravityOnce = true;
+            Refresh();
+        }
         public void HardDrop()
         {
             if (!AcceptsInput) return;
