@@ -13547,6 +13547,7 @@ GameObject:
   - component: {fileID: 1409977578}
   - component: {fileID: 1409977580}
   - component: {fileID: 1409977579}
+  - component: {fileID: 1409977581}
   m_Layer: 0
   m_Name: Title
   m_TagString: Untagged
@@ -13595,7 +13596,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 43
+    m_FontSize: 30
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
@@ -13615,6 +13616,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1409977577}
   m_CullTransparentMesh: 1
+--- !u!114 &1409977581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1409977577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6425b36002b946f793a83e7cc5cee802, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Cubotris.Gameplay::Cubotris.Gameplay.SessionModeLabel
+  game: {fileID: 1311251397}
 --- !u!1 &1420514673
 GameObject:
   m_ObjectHideFlags: 0

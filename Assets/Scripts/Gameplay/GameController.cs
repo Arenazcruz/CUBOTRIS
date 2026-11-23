@@ -28,13 +28,13 @@ namespace Cubotris.Gameplay
         private ScoreRecord finishedRecord;
         public ScoreRecord FinishedRecord => Model == null || !Model.IsGameOver ? null : (finishedRecord ??= new ScoreRecord
         {
-            id = System.Guid.NewGuid().ToString("N"), score = Model.Score,
+            id = System.Guid.NewGuid().ToString("N"), score = Model.Score, mode = Session.Mode,
             survivalSeconds = Session.SurvivalSeconds, finishedAtUtc = System.DateTimeOffset.UtcNow.ToString("O")
         }).Copy();
 
         private void Start()
         {
-            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings);
+            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: GameSelection.Mode);
             timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             Refresh();
@@ -109,7 +109,7 @@ namespace Cubotris.Gameplay
         public void Restart()
         {
             finishedRecord = null;
-            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings);
+            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: Session.Mode);
             timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             IsPaused = false;

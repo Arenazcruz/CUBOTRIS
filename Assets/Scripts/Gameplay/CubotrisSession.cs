@@ -11,23 +11,26 @@ namespace Cubotris.Gameplay
         public int ActiveFace { get; private set; }
         public TetrisGame Game { get; }
         public double SurvivalSeconds { get; private set; }
+        public DifficultyMode Mode { get; }
         private readonly double[] elapsed = new double[FaceCount];
         private readonly double[] intervals = new double[FaceCount];
         private readonly int[] pendingRows = new int[FaceCount];
         private readonly Random garbageRandom;
 
-        public CubotrisSession(IPieceSource source = null, FallSettings settings = null, GarbageSettings garbageSettings = null, int? garbageSeed = null)
+        public CubotrisSession(IPieceSource source = null, FallSettings settings = null, GarbageSettings garbageSettings = null, int? garbageSeed = null, DifficultyMode mode = DifficultyMode.Normal)
         {
+            if(!Enum.IsDefined(typeof(DifficultyMode),mode))throw new ArgumentOutOfRangeException(nameof(mode));
+            Mode=mode;
             garbageSettings ??= new GarbageSettings();
             garbageRandom = garbageSeed.HasValue ? new Random(garbageSeed.Value) : new Random();
             var boards = new BoardState[FaceCount];
             for (int i = 0; i < boards.Length; i++)
             {
                 boards[i] = new BoardState();
-                intervals[i] = garbageSettings.IntervalFor(i);
+                intervals[i] = DifficultyRules.GarbageInterval(mode,garbageSettings.IntervalFor(i));
             }
             Faces = Array.AsReadOnly(boards);
-            Game = new TetrisGame(boards[0], source, settings, AdvanceFace, ApplyPendingGarbage);
+            Game = new TetrisGame(boards[0], source, DifficultyRules.Fall(mode,settings), AdvanceFace, ApplyPendingGarbage);
         }
 
         public double FaceElapsedSeconds(int face) => elapsed[face];
@@ -39,7 +42,7 @@ namespace Cubotris.Gameplay
         {
             if (seconds <= 0 || double.IsNaN(seconds) || double.IsInfinity(seconds) || Game.IsGameOver || !Game.HasActivePiece) return;
             SurvivalSeconds += seconds;
-            if (ActiveFace == 0) return;
+            if (ActiveFace == 0 || double.IsInfinity(intervals[ActiveFace])) return;
             double total = elapsed[ActiveFace] + seconds;
             double completed = Math.Floor(total / intervals[ActiveFace]);
             elapsed[ActiveFace] = total % intervals[ActiveFace];

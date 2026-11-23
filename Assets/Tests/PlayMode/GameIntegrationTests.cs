@@ -17,6 +17,8 @@ namespace Cubotris.Tests
         private Keyboard keyboard;
         private string previousBindings;
         private bool hadBindings;
+        private bool hadMode;
+        private int previousMode;
         private object previousHistory;
         private string historyDirectory;
         private static readonly System.Reflection.FieldInfo HistoryField = typeof(BestScoreStore).GetField("history", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
@@ -30,6 +32,7 @@ namespace Cubotris.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            hadMode=PlayerPrefs.HasKey(GameSelection.ModeKey);previousMode=PlayerPrefs.GetInt(GameSelection.ModeKey);GameSelection.Mode=DifficultyMode.Normal;
             hadBindings = PlayerPrefs.HasKey(ControlBindings.PreferencesKey);
             previousBindings = PlayerPrefs.GetString(ControlBindings.PreferencesKey);
             ControlBindings.ResetDefaults();
@@ -54,6 +57,7 @@ namespace Cubotris.Tests
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            Restore(GameSelection.ModeKey,hadMode,previousMode);
             Time.timeScale = 1;
             if (hadBindings) PlayerPrefs.SetString(ControlBindings.PreferencesKey, previousBindings); else PlayerPrefs.DeleteKey(ControlBindings.PreferencesKey);
             ControlBindings.Reload();
@@ -595,6 +599,8 @@ namespace Cubotris.Tests
                 Selected("Canvas/MenuButtons/OptionsButton");
                 yield return Tap(Key.UpArrow);
                 Selected("Canvas/MenuButtons/RecordsButton");
+                yield return Tap(Key.UpArrow);
+                Selected("Canvas/MenuButtons/ModeButton");
                 yield return Tap(Key.UpArrow);
                 yield return Tap(Key.Enter);
                 Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Game"));

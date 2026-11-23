@@ -48,12 +48,13 @@ namespace Cubotris.Gameplay
             }
             for (int i = 0; i < difficultyTexts.Length; i++)
             {
-                int remaining = (int)System.Math.Ceiling(session.SecondsUntilGarbage(i));
+                double secondsRemaining = session.SecondsUntilGarbage(i);
+                int remaining = double.IsInfinity(secondsRemaining) ? int.MaxValue : (int)System.Math.Ceiling(secondsRemaining);
                 int pending = session.PendingGarbageRows(i);
                 if (shownRemaining[i] == remaining && shownPending[i] == pending) continue;
                 shownRemaining[i] = remaining; shownPending[i] = pending;
-                var warning = GarbageWarning.Level(i, remaining, pending, garbageWarningSeconds);
-                difficultyTexts[i].text = GarbageWarning.Message(i, remaining, pending, garbageWarningSeconds);
+                var warning = GarbageWarning.Level(i, secondsRemaining, pending, garbageWarningSeconds);
+                difficultyTexts[i].text = GarbageWarning.Message(i, secondsRemaining, pending, garbageWarningSeconds);
                 difficultyTexts[i].color = warning == GarbageWarningLevel.Pending ? pendingGarbageColor
                     : warning == GarbageWarningLevel.Imminent ? imminentGarbageColor : normalDifficultyColors[i];
             }

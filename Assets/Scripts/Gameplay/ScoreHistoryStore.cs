@@ -16,6 +16,7 @@ namespace Cubotris.Gameplay
         public int score;
         public double survivalSeconds;
         public string finishedAtUtc;
+        public DifficultyMode mode;
         public ScoreRecord Copy() => (ScoreRecord)MemberwiseClone();
     }
 
@@ -38,6 +39,8 @@ namespace Cubotris.Gameplay
             .ThenByDescending(r => r.survivalSeconds).ThenBy(r => DateTimeOffset.Parse(r.finishedAtUtc, CultureInfo.InvariantCulture))
             .ThenBy(r => r.id, StringComparer.Ordinal).Select(r => r.Copy()).ToArray();
         public ScoreRecord Best => Records.FirstOrDefault();
+        public IReadOnlyList<ScoreRecord> RecordsFor(DifficultyMode mode) => Records.Where(r=>r.mode==mode).ToArray();
+        public ScoreRecord BestFor(DifficultyMode mode) => RecordsFor(mode).FirstOrDefault();
         public bool Contains(string id) => data.records.Any(r => r.id == id);
 
         public ScoreHistoryStore(string path, int previousBest = 0)
@@ -82,7 +85,7 @@ namespace Cubotris.Gameplay
             if (!ValidateName(input, out string name, out error)) return false;
             if (finishedRun == null || !Guid.TryParse(finishedRun.id, out _) || finishedRun.score < 0
                 || double.IsNaN(finishedRun.survivalSeconds) || double.IsInfinity(finishedRun.survivalSeconds)
-                || finishedRun.survivalSeconds < 0 || !ValidDate(finishedRun.finishedAtUtc))
+                || finishedRun.survivalSeconds < 0 || !ValidDate(finishedRun.finishedAtUtc) || !Enum.IsDefined(typeof(DifficultyMode),finishedRun.mode))
             { error = "Los datos de la partida no son válidos."; return false; }
             if (Contains(finishedRun.id)) { error = "Esta partida ya está guardada."; return false; }
             var next = Clone(); var record = finishedRun.Copy(); record.playerName = name; next.records.Add(record);
@@ -97,6 +100,8 @@ namespace Cubotris.Gameplay
 
         public bool TryClear(out string error)
         { var next = Clone(); next.records.Clear(); return Commit(next, out error); }
+        public bool TryClear(DifficultyMode mode,out string error)
+        { var next=Clone();next.records.RemoveAll(r=>r.mode==mode);return Commit(next,out error); }
 
         private Document Clone() => new Document { historicalUnattributedScore = data.historicalUnattributedScore,
             records = data.records.Select(r => r.Copy()).ToList() };
@@ -137,7 +142,7 @@ namespace Cubotris.Gameplay
             foreach (var record in doc.records)
                 if (record == null || !Guid.TryParse(record.id, out _) || !ids.Add(record.id)
                     || !ValidateName(record.playerName, out _, out _) || record.score < 0 || record.survivalSeconds < 0
-                    || double.IsNaN(record.survivalSeconds) || double.IsInfinity(record.survivalSeconds) || !ValidDate(record.finishedAtUtc))
+                    || double.IsNaN(record.survivalSeconds) || double.IsInfinity(record.survivalSeconds) || !ValidDate(record.finishedAtUtc) || !Enum.IsDefined(typeof(DifficultyMode),record.mode))
                     throw new InvalidDataException("Registro inválido o duplicado");
             return doc;
         }
