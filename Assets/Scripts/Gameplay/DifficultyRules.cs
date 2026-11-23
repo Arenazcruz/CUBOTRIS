@@ -6,6 +6,7 @@ namespace Cubotris.Gameplay
     public static class GameSelection
     {
         public const string ModeKey="Cubotris.Difficulty.v1";
+        public static int PracticeFace { get; set; } = -1;
         public static DifficultyMode Mode
         {
             get { int value=PlayerPrefs.GetInt(ModeKey);return Enum.IsDefined(typeof(DifficultyMode),value)?(DifficultyMode)value:DifficultyMode.Normal; }

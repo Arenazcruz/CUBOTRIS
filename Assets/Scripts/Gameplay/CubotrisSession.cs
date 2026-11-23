@@ -12,14 +12,17 @@ namespace Cubotris.Gameplay
         public TetrisGame Game { get; }
         public double SurvivalSeconds { get; private set; }
         public DifficultyMode Mode { get; }
+        public bool IsPractice { get; }
         private readonly double[] elapsed = new double[FaceCount];
         private readonly double[] intervals = new double[FaceCount];
         private readonly int[] pendingRows = new int[FaceCount];
         private readonly Random garbageRandom;
 
-        public CubotrisSession(IPieceSource source = null, FallSettings settings = null, GarbageSettings garbageSettings = null, int? garbageSeed = null, DifficultyMode mode = DifficultyMode.Normal)
+        public CubotrisSession(IPieceSource source = null, FallSettings settings = null, GarbageSettings garbageSettings = null, int? garbageSeed = null, DifficultyMode mode = DifficultyMode.Normal, int practiceFace = -1)
         {
             if(!Enum.IsDefined(typeof(DifficultyMode),mode))throw new ArgumentOutOfRangeException(nameof(mode));
+            if(practiceFace < -1 || practiceFace >= FaceCount)throw new ArgumentOutOfRangeException(nameof(practiceFace));
+            IsPractice=practiceFace>=0;ActiveFace=IsPractice?practiceFace:0;
             Mode=mode;
             garbageSettings ??= new GarbageSettings();
             garbageRandom = garbageSeed.HasValue ? new Random(garbageSeed.Value) : new Random();
@@ -30,7 +33,7 @@ namespace Cubotris.Gameplay
                 intervals[i] = DifficultyRules.GarbageInterval(mode,garbageSettings.IntervalFor(i));
             }
             Faces = Array.AsReadOnly(boards);
-            Game = new TetrisGame(boards[0], source, DifficultyRules.Fall(mode,settings), AdvanceFace, ApplyPendingGarbage);
+            Game = new TetrisGame(boards[ActiveFace], source, DifficultyRules.Fall(mode,settings), AdvanceFace, ApplyPendingGarbage);
         }
 
         public double FaceElapsedSeconds(int face) => elapsed[face];
@@ -69,7 +72,7 @@ namespace Cubotris.Gameplay
 
         private BoardState AdvanceFace()
         {
-            ActiveFace = (ActiveFace + 1) % FaceCount;
+            if(!IsPractice) ActiveFace = (ActiveFace + 1) % FaceCount;
             return Faces[ActiveFace];
         }
     }

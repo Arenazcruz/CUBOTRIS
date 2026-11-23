@@ -62,8 +62,8 @@ namespace Cubotris.Gameplay
             if (shownFace != displayedFace)
             {
                 shownFace = displayedFace;
-                int next = (displayedFace + 1) % CubotrisSession.FaceCount;
-                nextFaceText.text = $"SIGUIENTE: {next + 1} / {CubotrisSession.FaceCount}";
+                int next = session.IsPractice ? displayedFace : (displayedFace + 1) % CubotrisSession.FaceCount;
+                nextFaceText.text = session.IsPractice ? "CARA FIJA · SIN CLASIFICACIÓN" : $"SIGUIENTE: {next + 1} / {CubotrisSession.FaceCount}";
                 nextFaceText.color = transition.FaceColor(next);
                 for (int i = 0; i < faceMarkers.Length; i++)
                 {

@@ -19,6 +19,7 @@ namespace Cubotris.Tests
         private bool hadBindings;
         private bool hadMode;
         private int previousMode;
+        private int previousPracticeFace;
         private object previousHistory;
         private string historyDirectory;
         private static readonly System.Reflection.FieldInfo HistoryField = typeof(BestScoreStore).GetField("history", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
@@ -32,6 +33,7 @@ namespace Cubotris.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            previousPracticeFace=GameSelection.PracticeFace;GameSelection.PracticeFace=-1;
             hadMode=PlayerPrefs.HasKey(GameSelection.ModeKey);previousMode=PlayerPrefs.GetInt(GameSelection.ModeKey);GameSelection.Mode=DifficultyMode.Normal;
             hadBindings = PlayerPrefs.HasKey(ControlBindings.PreferencesKey);
             previousBindings = PlayerPrefs.GetString(ControlBindings.PreferencesKey);
@@ -57,6 +59,7 @@ namespace Cubotris.Tests
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            GameSelection.PracticeFace=previousPracticeFace;
             Restore(GameSelection.ModeKey,hadMode,previousMode);
             Time.timeScale = 1;
             if (hadBindings) PlayerPrefs.SetString(ControlBindings.PreferencesKey, previousBindings); else PlayerPrefs.DeleteKey(ControlBindings.PreferencesKey);
@@ -1114,7 +1117,7 @@ namespace Cubotris.Tests
         private static IEnumerator LoseGame(GameController game)
         {
             yield return Settled(game);
-            var target = game.Session.Faces[(game.Session.ActiveFace + 1) % 4];
+            var target = game.Session.Faces[game.Session.IsPractice ? game.Session.ActiveFace : (game.Session.ActiveFace + 1) % 4];
             var spawnZone = Enumerable.Range(3, 4).SelectMany(x => new[] { new Vector2Int(x, 18), new Vector2Int(x, 19) }).Where(c => !target[c.x, c.y].HasValue).ToArray();
             target.TryLock(TetrominoType.Z, spawnZone);
             game.HardDrop(); yield return null; yield return null;

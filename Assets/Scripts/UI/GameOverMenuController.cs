@@ -30,14 +30,20 @@ namespace Cubotris.UI
             result = game.FinishedRecord;
             if (result == null) return;
             if (shownId != result.id) { playerNameInput.text = ""; shownId = result.id; }
-            saved = BestScoreStore.History.Contains(result.id);
+            saved = result.practice || BestScoreStore.History.Contains(result.id);
             finalScoreText.text = result.score.ToString();
-            bestScoreText.text = BestScoreStore.BestFor(result.mode).ToString();
+            bestScoreText.text = result.practice ? "—" : BestScoreStore.BestFor(result.mode).ToString();
             survivalTimeText.text = GameHudView.FormatTime(result.survivalSeconds);
-            statusText.text = saved ? "Récord guardado." : BestScoreStore.History.Notice ?? "Escribe tu nombre para registrar esta partida.";
+            statusText.text = result.practice ? "Práctica terminada. No se guarda en la clasificación." : saved ? "Récord guardado." : BestScoreStore.History.Notice ?? "Escribe tu nombre para registrar esta partida.";
             transitioning = false; destination = Destination.None; actionFrame = Time.frameCount;
             retryButton.interactable = mainMenuButton.interactable = true;
             saveButton.interactable = playerNameInput.interactable = !saved;
+            saveButton.gameObject.SetActive(!result.practice);playerNameInput.gameObject.SetActive(!result.practice);
+            if(result.practice)
+            {
+                retryButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnDown=mainMenuButton,selectOnUp=mainMenuButton,selectOnLeft=mainMenuButton,selectOnRight=mainMenuButton};
+                mainMenuButton.navigation=new Navigation{mode=Navigation.Mode.Explicit,selectOnDown=retryButton,selectOnUp=retryButton,selectOnLeft=retryButton,selectOnRight=retryButton};
+            }
             SetDialog(false); Select(retryButton);
         }
 

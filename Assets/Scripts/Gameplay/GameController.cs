@@ -28,13 +28,13 @@ namespace Cubotris.Gameplay
         private ScoreRecord finishedRecord;
         public ScoreRecord FinishedRecord => Model == null || !Model.IsGameOver ? null : (finishedRecord ??= new ScoreRecord
         {
-            id = System.Guid.NewGuid().ToString("N"), score = Model.Score, mode = Session.Mode,
+            id = System.Guid.NewGuid().ToString("N"), score = Model.Score, mode = Session.Mode, practice = Session.IsPractice,
             survivalSeconds = Session.SurvivalSeconds, finishedAtUtc = System.DateTimeOffset.UtcNow.ToString("O")
         }).Copy();
 
         private void Start()
         {
-            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: GameSelection.Mode);
+            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: GameSelection.Mode, practiceFace: GameSelection.PracticeFace);
             timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             Refresh();
@@ -91,7 +91,7 @@ namespace Cubotris.Gameplay
         {
             if (Model.PiecesLocked == lockedBefore) return;
             ResetInput();
-            if (Model.IsGameOver) faceTransition.Show(Session);
+            if (Model.IsGameOver || Session.IsPractice) faceTransition.Show(Session);
             else faceTransition.Begin(Session, (Session.ActiveFace + CubotrisSession.FaceCount - 1) % CubotrisSession.FaceCount);
             Refresh();
         }
@@ -109,7 +109,7 @@ namespace Cubotris.Gameplay
         public void Restart()
         {
             finishedRecord = null;
-            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: Session.Mode);
+            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: Session.Mode, practiceFace: Session.IsPractice?Session.ActiveFace:-1);
             timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             IsPaused = false;

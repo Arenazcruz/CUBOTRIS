@@ -17,6 +17,7 @@ namespace Cubotris.Gameplay
         public double survivalSeconds;
         public string finishedAtUtc;
         public DifficultyMode mode;
+        public bool practice;
         public ScoreRecord Copy() => (ScoreRecord)MemberwiseClone();
     }
 
@@ -82,6 +83,7 @@ namespace Cubotris.Gameplay
 
         public bool TryAdd(ScoreRecord finishedRun, string input, out string error)
         {
+            if(finishedRun?.practice==true){error="La práctica no participa en la clasificación.";return false;}
             if (!ValidateName(input, out string name, out error)) return false;
             if (finishedRun == null || !Guid.TryParse(finishedRun.id, out _) || finishedRun.score < 0
                 || double.IsNaN(finishedRun.survivalSeconds) || double.IsInfinity(finishedRun.survivalSeconds)
@@ -140,7 +142,7 @@ namespace Cubotris.Gameplay
             if (doc == null || doc.version != 1 || doc.records == null || doc.historicalUnattributedScore < 0) throw new InvalidDataException("Formato incompatible");
             var ids = new HashSet<string>();
             foreach (var record in doc.records)
-                if (record == null || !Guid.TryParse(record.id, out _) || !ids.Add(record.id)
+                if (record == null || record.practice || !Guid.TryParse(record.id, out _) || !ids.Add(record.id)
                     || !ValidateName(record.playerName, out _, out _) || record.score < 0 || record.survivalSeconds < 0
                     || double.IsNaN(record.survivalSeconds) || double.IsInfinity(record.survivalSeconds) || !ValidDate(record.finishedAtUtc) || !Enum.IsDefined(typeof(DifficultyMode),record.mode))
                     throw new InvalidDataException("Registro inválido o duplicado");
