@@ -41,6 +41,7 @@ namespace Cubotris.Gameplay
             Session = resumed ?? new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: GameSelection.Mode, practiceFace: GameSelection.PracticeFace);
             IsPaused=resumed!=null;Time.timeScale=IsPaused?0:1;
             if(IsPaused)ResetInput();
+            RecordStatistics(RunOutcome.Started);
             timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             Refresh();
@@ -118,6 +119,7 @@ namespace Cubotris.Gameplay
             runClosed=false;SaveNotice=null;LeavingWithSave=false;
             finishedRecord = null;
             Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: Session.Mode, practiceFace: Session.IsPractice?Session.ActiveFace:-1);
+            RecordStatistics(RunOutcome.Started);
             timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             IsPaused = false;
@@ -136,14 +138,26 @@ namespace Cubotris.Gameplay
         }
 
         public void Abandon()=>CloseRun();
+        public void MarkSaved(){LeavingWithSave=true;RecordStatistics(RunOutcome.Suspended);}
+        private void RecordStatistics(RunOutcome outcome)
+        {if(!PersonalStats.Store.TryUpdate(Session,outcome,out string error))SaveNotice=error;}
         private void CloseRun()
         {
             if(runClosed || Session==null)return;
             runClosed=true;
+            RecordStatistics(Model.IsGameOver?RunOutcome.Completed:RunOutcome.Abandoned);
             if(!GameSave.Store.TryClose(Session.RunId,out string error))SaveNotice=error;
         }
 
-        private void OnDestroy() { Time.timeScale = 1; }
+        private void PreserveOrAbandon()
+        {
+            if(runClosed || LeavingWithSave || Session==null)return;
+            if(!Model.IsGameOver && GameSave.Store.TryLoad(out var checkpoint,out _) && checkpoint.RunId==Session.RunId)
+            {LeavingWithSave=true;if(!PersonalStats.Store.TryUpdate(checkpoint,RunOutcome.Suspended,out string error))SaveNotice=error;}
+            else CloseRun();
+        }
+        private void OnApplicationQuit(){PreserveOrAbandon();}
+        private void OnDestroy() { PreserveOrAbandon();Time.timeScale = 1; }
 
         private void Refresh()
         {
