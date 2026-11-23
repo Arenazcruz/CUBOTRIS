@@ -13,6 +13,12 @@ namespace Cubotris.Gameplay
         public double SurvivalSeconds { get; private set; }
         public DifficultyMode Mode { get; }
         public bool IsPractice { get; }
+        public const int RotationBonus = 400;
+        public int CycleClearMask { get; private set; }
+        public int CompletedRotations { get; private set; }
+        public int SuccessfulRotations { get; private set; }
+        public int LastRotationBonus { get; private set; }
+        public int CycleBonusScore => SuccessfulRotations * RotationBonus;
         private readonly double[] elapsed = new double[FaceCount];
         private readonly double[] intervals = new double[FaceCount];
         private readonly int[] pendingRows = new int[FaceCount];
@@ -54,6 +60,17 @@ namespace Cubotris.Gameplay
 
         private bool ApplyPendingGarbage()
         {
+            if(!IsPractice)
+            {
+                if(Game.LastClearCount>0)CycleClearMask|=1<<ActiveFace;
+                if(ActiveFace==FaceCount-1)
+                {
+                    CompletedRotations++;
+                    LastRotationBonus=CycleClearMask==15?RotationBonus:0;
+                    if(LastRotationBonus>0){SuccessfulRotations++;Game.AwardBonus(LastRotationBonus);}
+                    CycleClearMask=0;
+                }
+            }
             int rows = pendingRows[ActiveFace];
             if (rows == 0) return true;
             pendingRows[ActiveFace] = 0;
