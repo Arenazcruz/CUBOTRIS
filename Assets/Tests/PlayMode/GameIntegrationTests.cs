@@ -510,6 +510,8 @@ namespace Cubotris.Tests
                 yield return Tap(Key.DownArrow);
                 Selected("GameCanvas/PauseOptionsPanel/PanelBackground/ControlsButton");
                 yield return Tap(Key.DownArrow);
+                Selected("GameCanvas/PauseOptionsPanel/PanelBackground/DisplayButton");
+                yield return Tap(Key.DownArrow);
                 Selected("GameCanvas/PauseOptionsPanel/PanelBackground/BackButton");
                 yield return Tap(Key.Enter);
                 Selected("GameCanvas/PausePanel/PanelBackground/OptionsButton");
@@ -585,6 +587,8 @@ namespace Cubotris.Tests
                 Assert.That(PlayerPrefs.GetInt(effectsKey), Is.EqualTo(51));
                 yield return Tap(Key.DownArrow);
                 Selected("Canvas/OptionsPanel/PanelBackground/ControlsButton");
+                yield return Tap(Key.DownArrow);
+                Selected("Canvas/OptionsPanel/PanelBackground/DisplayButton");
                 yield return Tap(Key.DownArrow);
                 Selected("Canvas/OptionsPanel/PanelBackground/BackButton");
                 yield return Tap(Key.Enter);
