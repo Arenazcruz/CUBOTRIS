@@ -43,6 +43,7 @@ namespace Cubotris.UI
         public void Play()
         {
             if (recordsPanel.activeSelf || optionsPanel.activeSelf || SettingsOverlay.OpenCount>0) return;
+            GameSelection.PracticeFace=-1;
             SceneManager.LoadScene("Game");
         }
 
