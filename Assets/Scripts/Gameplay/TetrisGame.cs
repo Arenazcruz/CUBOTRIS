@@ -47,6 +47,8 @@ namespace Cubotris.Gameplay
         public bool IsGameOver { get; private set; }
         public int LinesCleared { get; private set; }
         public int Score { get; private set; }
+        public int LineScore { get; private set; }
+        public int LastClearCount { get; private set; }
         public int PiecesLocked { get; private set; }
         public int Revision { get; private set; }
         public TetrominoType NextPiece => source.Peek();
@@ -170,8 +172,11 @@ namespace Cubotris.Gameplay
             PiecesLocked++;
             HoldUsed = false;
             int cleared = Board.ClearFullRows();
+            LastClearCount = cleared;
             LinesCleared += cleared;
-            Score += cleared switch { 1 => 100, 2 => 300, 3 => 500, 4 => 800, _ => 0 };
+            int points = cleared switch { 1 => 100, 2 => 300, 3 => 500, 4 => 800, _ => 0 };
+            LineScore += points;
+            Score += points;
             fallTime = 0;
             if (afterLock != null && !afterLock()) { EndGame(); return; }
             if (nextBoard != null) Board = nextBoard();
@@ -184,6 +189,13 @@ namespace Cubotris.Gameplay
             var color = nextPieceColor;
             nextPieceColor = RandomPieceColor();
             SpawnPiece(type, color);
+        }
+
+        internal void AwardBonus(int points)
+        {
+            if (points < 0) throw new ArgumentOutOfRangeException(nameof(points));
+            Score += points;
+            Revision++;
         }
 
         private void SpawnPiece(TetrominoType type, Color color)
