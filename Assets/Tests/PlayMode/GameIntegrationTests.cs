@@ -15,6 +15,8 @@ namespace Cubotris.Tests
     public sealed partial class GameIntegrationTests
     {
         private Keyboard keyboard;
+        private string previousBindings;
+        private bool hadBindings;
         private object previousHistory;
         private string historyDirectory;
         private static readonly System.Reflection.FieldInfo HistoryField = typeof(BestScoreStore).GetField("history", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
@@ -28,6 +30,9 @@ namespace Cubotris.Tests
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            hadBindings = PlayerPrefs.HasKey(ControlBindings.PreferencesKey);
+            previousBindings = PlayerPrefs.GetString(ControlBindings.PreferencesKey);
+            ControlBindings.ResetDefaults();
             previousHistory = HistoryField.GetValue(null);
             historyDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CubotrisTests-" + System.Guid.NewGuid().ToString("N"));
             HistoryField.SetValue(null, new ScoreHistoryStore(System.IO.Path.Combine(historyDirectory, "records.json")));
@@ -50,6 +55,8 @@ namespace Cubotris.Tests
         public IEnumerator TearDown()
         {
             Time.timeScale = 1;
+            if (hadBindings) PlayerPrefs.SetString(ControlBindings.PreferencesKey, previousBindings); else PlayerPrefs.DeleteKey(ControlBindings.PreferencesKey);
+            ControlBindings.Reload();
             var live = Object.FindAnyObjectByType<GameController>();
             if (live != null) Object.DestroyImmediate(live.gameObject);
             HistoryField.SetValue(null, previousHistory);
@@ -501,6 +508,8 @@ namespace Cubotris.Tests
                 yield return Tap(Key.LeftArrow);
                 Assert.That(PlayerPrefs.GetInt(effectsKey), Is.EqualTo(49));
                 yield return Tap(Key.DownArrow);
+                Selected("GameCanvas/PauseOptionsPanel/PanelBackground/ControlsButton");
+                yield return Tap(Key.DownArrow);
                 Selected("GameCanvas/PauseOptionsPanel/PanelBackground/BackButton");
                 yield return Tap(Key.Enter);
                 Selected("GameCanvas/PausePanel/PanelBackground/OptionsButton");
@@ -574,6 +583,8 @@ namespace Cubotris.Tests
                 Selected("Canvas/OptionsPanel/PanelBackground/EffectsVolume/Slider");
                 yield return Tap(Key.RightArrow);
                 Assert.That(PlayerPrefs.GetInt(effectsKey), Is.EqualTo(51));
+                yield return Tap(Key.DownArrow);
+                Selected("Canvas/OptionsPanel/PanelBackground/ControlsButton");
                 yield return Tap(Key.DownArrow);
                 Selected("Canvas/OptionsPanel/PanelBackground/BackButton");
                 yield return Tap(Key.Enter);
