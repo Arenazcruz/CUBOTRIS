@@ -16,6 +16,10 @@ namespace Cubotris.Gameplay
         [SerializeField] private Text nextFaceText;
         [SerializeField] private Text survivalTimeText;
         [SerializeField] private Text[] difficultyTexts = new Text[4];
+        [SerializeField, Min(1)] private int garbageWarningSeconds = 5;
+        [SerializeField] private Color imminentGarbageColor = new Color(1f, .78f, .35f);
+        [SerializeField] private Color pendingGarbageColor = new Color(1f, .48f, .42f);
+        private Color[] normalDifficultyColors;
         private long shownSeconds = -1;
         private readonly int[] shownRemaining = { -1, -1, -1, -1 };
         private readonly int[] shownPending = { -1, -1, -1, -1 };
@@ -31,6 +35,11 @@ namespace Cubotris.Gameplay
 
         public void Refresh(CubotrisSession session, int displayedFace)
         {
+            if (normalDifficultyColors == null)
+            {
+                normalDifficultyColors = new Color[difficultyTexts.Length];
+                for (int i = 0; i < difficultyTexts.Length; i++) normalDifficultyColors[i] = difficultyTexts[i].color;
+            }
             long seconds = (long)System.Math.Floor(session.SurvivalSeconds);
             if (shownSeconds != seconds)
             {
@@ -43,9 +52,10 @@ namespace Cubotris.Gameplay
                 int pending = session.PendingGarbageRows(i);
                 if (shownRemaining[i] == remaining && shownPending[i] == pending) continue;
                 shownRemaining[i] = remaining; shownPending[i] = pending;
-                difficultyTexts[i].text = i == 0 ? "SIN\nPENALIZACIÓN" : pending > 0
-                    ? $"+{pending} AL FIJAR\n+{i} EN {remaining:00} s"
-                    : $"+{i} {(i == 1 ? "FILA" : "FILAS")}\nEN {remaining:00} s";
+                var warning = GarbageWarning.Level(i, remaining, pending, garbageWarningSeconds);
+                difficultyTexts[i].text = GarbageWarning.Message(i, remaining, pending, garbageWarningSeconds);
+                difficultyTexts[i].color = warning == GarbageWarningLevel.Pending ? pendingGarbageColor
+                    : warning == GarbageWarningLevel.Imminent ? imminentGarbageColor : normalDifficultyColors[i];
             }
             for (int i = 0; i < miniBoards.Length; i++) miniBoards[i].Display(session.Faces[i]);
             if (shownFace != displayedFace)
