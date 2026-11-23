@@ -23,12 +23,13 @@ namespace Cubotris.UI
         private void Update()
         {
             pauseButton.interactable = game.Model != null && !game.Model.IsGameOver && !leaving;
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) TogglePause();
+            if (SettingsOverlay.OpenCount == 0 && !ControlBindings.Capturing && Keyboard.current != null
+                && (Keyboard.current.escapeKey.wasPressedThisFrame || ControlBindings.Pressed(GameAction.Pause))) TogglePause();
             if (EventSystem.current != null)
             {
                 // Pointer clicks can still open PAUSA; keyboard UI input belongs only to an open menu.
                 bool menuOpen = game.Model != null && (game.IsPaused || game.Model.IsGameOver);
-                EventSystem.current.sendNavigationEvents = menuOpen;
+                EventSystem.current.sendNavigationEvents = menuOpen && !ControlBindings.Capturing;
                 if (!menuOpen && EventSystem.current.currentSelectedGameObject != null)
                     EventSystem.current.SetSelectedGameObject(null);
             }

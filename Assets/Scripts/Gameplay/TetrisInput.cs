@@ -13,17 +13,19 @@ namespace Cubotris.Gameplay
         private float repeatTime;
         private int inputVersion;
         private bool waitForRelease;
+        private int bindingVersion = -1;
 
         private void Update()
         {
             var keyboard = Keyboard.current;
-            if (inputVersion != controller.InputVersion)
+            if (inputVersion != controller.InputVersion || bindingVersion != ControlBindings.Version)
             {
                 inputVersion = controller.InputVersion;
+                bindingVersion = ControlBindings.Version;
                 ResetInput();
                 waitForRelease = true;
             }
-            if (keyboard == null || !controller.AcceptsInput)
+            if (keyboard == null || !controller.AcceptsInput || ControlBindings.Capturing)
             {
                 ResetInput();
                 return;
@@ -31,21 +33,18 @@ namespace Cubotris.Gameplay
             // Keys used in the pause UI must be released before controlling the piece again.
             if (waitForRelease)
             {
-                waitForRelease = keyboard.aKey.isPressed || keyboard.dKey.isPressed
-                    || keyboard.wKey.isPressed || keyboard.sKey.isPressed || keyboard.spaceKey.isPressed
-                    || keyboard.leftArrowKey.isPressed || keyboard.rightArrowKey.isPressed
-                    || keyboard.upArrowKey.isPressed || keyboard.downArrowKey.isPressed;
+                waitForRelease = ControlBindings.AnyGameplayHeld();
                 ResetInput();
                 return;
             }
-            controller.SoftDropHeld = keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed;
-            if (keyboard.spaceKey.wasPressedThisFrame)
+            controller.SoftDropHeld = ControlBindings.Held(GameAction.SoftDrop);
+            if (ControlBindings.Pressed(GameAction.HardDrop))
             {
                 controller.HardDrop();
                 return;
             }
-            int direction = (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1 : 0)
-                - (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1 : 0);
+            int direction = (ControlBindings.Held(GameAction.Right) ? 1 : 0)
+                - (ControlBindings.Held(GameAction.Left) ? 1 : 0);
             if (direction != heldDirection)
             {
                 heldDirection = direction;
@@ -61,7 +60,7 @@ namespace Cubotris.Gameplay
                     repeatTime += Mathf.Max(0.01f, repeatInterval);
                 }
             }
-            if (keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame)
+            if (ControlBindings.Pressed(GameAction.Rotate))
                 controller.Rotate();
         }
 
