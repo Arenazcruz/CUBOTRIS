@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 namespace Cubotris.Gameplay
 {
-    public enum GameAction { Left, Right, Rotate, SoftDrop, HardDrop, Pause }
+    public enum GameAction { Left, Right, Rotate, SoftDrop, HardDrop, Pause, Hold }
     [Serializable] public sealed class KeyBinding
     {
         public GameAction action;
@@ -25,11 +25,11 @@ namespace Cubotris.Gameplay
         {
             new KeyBinding(GameAction.Left, Key.A, Key.LeftArrow), new KeyBinding(GameAction.Right, Key.D, Key.RightArrow),
             new KeyBinding(GameAction.Rotate, Key.W, Key.UpArrow), new KeyBinding(GameAction.SoftDrop, Key.S, Key.DownArrow),
-            new KeyBinding(GameAction.HardDrop, Key.Space), new KeyBinding(GameAction.Pause, Key.P)
+            new KeyBinding(GameAction.HardDrop, Key.Space), new KeyBinding(GameAction.Pause, Key.P), new KeyBinding(GameAction.Hold, Key.C)
         };
         public static string Label(GameAction action) => action switch
         { GameAction.Left => "IZQUIERDA", GameAction.Right => "DERECHA", GameAction.Rotate => "GIRAR",
-            GameAction.SoftDrop => "BAJAR", GameAction.HardDrop => "CAÍDA RÁPIDA", _ => "PAUSA (también ESC)" };
+            GameAction.SoftDrop => "BAJAR", GameAction.HardDrop => "CAÍDA RÁPIDA", GameAction.Hold => "RESERVAR", _ => "PAUSA (también ESC)" };
         public static string KeyName(Key key) => key == Key.None ? "—" : Keyboard.current?[key]?.displayName ?? key.ToString();
         public static bool Held(GameAction action) => Match(action, false);
         public static bool Pressed(GameAction action) => Match(action, true);
@@ -78,6 +78,13 @@ namespace Cubotris.Gameplay
             try
             {
                 var doc = JsonUtility.FromJson<Document>(PlayerPrefs.GetString(PreferencesKey, ""));
+                // Add the new action without discarding previously customized controls.
+                if (doc?.bindings?.Length == 6 && doc.bindings.All(b => b != null && b.action != GameAction.Hold))
+                {
+                    var used = doc.bindings.SelectMany(b => new[] { b.primary, b.secondary });
+                    var free = new[] { Key.C, Key.LeftShift, Key.RightShift, Key.H, Key.V, Key.B, Key.N, Key.M, Key.Q, Key.E, Key.R, Key.T, Key.Y }.First(k => !used.Contains(k));
+                    doc.bindings = doc.bindings.Concat(new[] { new KeyBinding(GameAction.Hold, free) }).ToArray();
+                }
                 if (doc != null && Validate(doc.bindings, out _)) return doc.bindings;
             }
             catch (Exception) { }

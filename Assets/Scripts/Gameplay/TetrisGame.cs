@@ -51,6 +51,10 @@ namespace Cubotris.Gameplay
         public int Revision { get; private set; }
         public TetrominoType NextPiece => source.Peek();
         public Color NextPieceColor => nextPieceColor;
+        public TetrominoType? HeldPiece { get; private set; }
+        public Color HeldPieceColor { get; private set; }
+        public bool HoldUsed { get; private set; }
+        public bool CanHold => !IsGameOver && HasActivePiece && !HoldUsed;
         public float GravityInterval => Mathf.Max(0.01f, settings.minimumInterval,
             settings.initialInterval * Mathf.Pow(Mathf.Clamp(settings.speedMultiplier, 0.1f, 1f), LinesCleared / Mathf.Max(1, settings.linesPerStep)));
 
@@ -69,6 +73,21 @@ namespace Cubotris.Gameplay
         {
             if (IsGameOver || !HasActivePiece || (direction != -1 && direction != 1)) return false;
             return TryActive(Active.Rotation, Active.Position + new Vector2Int(direction, 0));
+        }
+
+        public bool Hold()
+        {
+            if (!CanHold) return false;
+            var previous = HeldPiece;
+            var previousColor = HeldPieceColor;
+            HeldPiece = Active.Type;
+            HeldPieceColor = Active.Color;
+            HoldUsed = true;
+            fallTime = 0;
+            wasSoftDropping = false;
+            if (previous.HasValue) SpawnPiece(previous.Value, previousColor);
+            else Spawn();
+            return true;
         }
 
         public bool RotateClockwise()
@@ -129,12 +148,12 @@ namespace Cubotris.Gameplay
             var position = Active.Position;
             while (Board.CanPlace(TetrominoData.Cells(Active.Type, Active.Rotation, position + Vector2Int.down)))
                 position += Vector2Int.down;
-            return new ActivePiece(Active.Type, Active.Rotation, position);
+            return new ActivePiece(Active.Type, Active.Rotation, position, Active.Color);
         }
 
         private bool TryActive(int rotation, Vector2Int position)
         {
-            var candidate = new ActivePiece(Active.Type, rotation, position);
+            var candidate = new ActivePiece(Active.Type, rotation, position, Active.Color);
             if (!Board.CanPlace(candidate.Cells)) return false;
             Active = candidate;
             Revision++;
@@ -149,6 +168,7 @@ namespace Cubotris.Gameplay
                 return;
             }
             PiecesLocked++;
+            HoldUsed = false;
             int cleared = Board.ClearFullRows();
             LinesCleared += cleared;
             Score += cleared switch { 1 => 100, 2 => 300, 3 => 500, 4 => 800, _ => 0 };
@@ -160,8 +180,15 @@ namespace Cubotris.Gameplay
 
         private void Spawn()
         {
-            Active = new ActivePiece(source.Next(), 0, new Vector2Int(Board.Width / 2 - 1, Board.Height - 2), nextPieceColor);
+            var type = source.Next();
+            var color = nextPieceColor;
             nextPieceColor = RandomPieceColor();
+            SpawnPiece(type, color);
+        }
+
+        private void SpawnPiece(TetrominoType type, Color color)
+        {
+            Active = new ActivePiece(type, 0, new Vector2Int(Board.Width / 2 - 1, Board.Height - 2), color);
             HasActivePiece = Board.CanPlace(Active.Cells);
             if (!HasActivePiece) EndGame();
             Revision++;

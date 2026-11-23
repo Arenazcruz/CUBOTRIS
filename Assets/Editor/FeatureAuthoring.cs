@@ -56,7 +56,8 @@ public static partial class FeatureAuthoring
     }
     private static void Complete(Action action)
     {try { action();AssetDatabase.SaveAssets();Debug.Log("FEATURE_AUTHORING_OK");EditorApplication.Exit(0); }catch(Exception ex){Debug.LogException(ex);EditorApplication.Exit(1);}}
-    public static void Controls() => Complete(() =>
+    public static void Controls() => Complete(BuildControls);
+    private static void BuildControls()
     {
         foreach(string sceneName in new[]{"MainMenu","Game"})
         {
@@ -81,7 +82,10 @@ public static partial class FeatureAuthoring
             if(background.Find("ControlsButton")!=null)Object.DestroyImmediate(background.Find("ControlsButton").gameObject);
             var open=Button("ControlsButton",background,"CONTROLES",80,565,400,56,controller.Open);controller.returnControl=open;
             background.Find("SaveHint").gameObject.SetActive(false);
-            Chain(background.Find("MusicVolume/Slider").GetComponent<Slider>(),background.Find("EffectsVolume/Slider").GetComponent<Slider>(),open,background.Find("BackButton").GetComponent<Button>());
+            var optionsNavigation = new System.Collections.Generic.List<Selectable> { background.Find("MusicVolume/Slider").GetComponent<Slider>(), background.Find("EffectsVolume/Slider").GetComponent<Slider>(), open };
+            if (background.Find("DisplayButton") != null) optionsNavigation.Add(background.Find("DisplayButton").GetComponent<Button>());
+            optionsNavigation.Add(background.Find("BackButton").GetComponent<Button>());
+            Chain(optionsNavigation.ToArray());
             if(sceneName=="Game")
             {
                 var hint=canvas.GetComponentsInChildren<Text>(true).FirstOrDefault(t=>t.name=="Controls");
@@ -89,5 +93,5 @@ public static partial class FeatureAuthoring
             }
             EditorSceneManager.SaveScene(scene);
         }
-    });
+    }
 }

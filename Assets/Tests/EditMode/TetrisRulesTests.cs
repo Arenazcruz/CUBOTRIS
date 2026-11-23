@@ -146,7 +146,7 @@ namespace Cubotris.Tests
             {
                 var color = game.Active.Color;
                 colors.Add(color);
-                var cells = game.Active.Cells;
+                var cells = game.GetLandingPiece().Value.Cells;
                 game.HardDrop();
                 foreach (var cell in cells)
                     Assert.That(game.Board.BlockColorAt(cell.x, cell.y), Is.EqualTo(color));
