@@ -13,6 +13,12 @@ namespace Cubotris.Gameplay
         [SerializeField] private GameObject gameOverNotice;
         [SerializeField] private FallSettings fallSettings = new FallSettings();
         [SerializeField] private GarbageSettings garbageSettings = new GarbageSettings();
+        [Header("Volteo del tablero")]
+        [SerializeField] private bool flipEnabled = true;
+        [Tooltip("Cada cuántos segundos de juego el tablero se voltea (de cabeza / normal).")]
+        [SerializeField, Min(1f)] private float flipInterval = 10f;
+        private float flipTimer;
+        public bool IsBoardUpsideDown => faceTransition.IsUpsideDown;
 
         public CubotrisSession Session { get; private set; }
         public TetrisGame Model => Session?.Game;
@@ -42,6 +48,7 @@ namespace Cubotris.Gameplay
 
         private void Update()
         {
+            UpdateFlip();
             if (IsTransitioning)
             {
                 if (!IsPaused)
@@ -57,6 +64,18 @@ namespace Cubotris.Gameplay
             skipGravityOnce = false;
             HandlePlacement(lockedBefore);
             Refresh();
+        }
+
+        /// <summary>Every flipInterval seconds of active play the board turns upside down (or back). Visual only.</summary>
+        private void UpdateFlip()
+        {
+            if (IsPaused || Model == null) return;
+            faceTransition.TickFlip(Time.deltaTime); // a flip already started always finishes
+            if (!flipEnabled || Model.IsGameOver) return;
+            flipTimer += Time.deltaTime;
+            if (flipTimer < flipInterval) return;
+            flipTimer -= flipInterval;
+            faceTransition.Flip();
         }
 
         public void Move(int direction) { if (AcceptsInput) Model.Move(direction); }
@@ -102,6 +121,8 @@ namespace Cubotris.Gameplay
             finishedRecord = null;
             Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings);
             timedFrame = Time.frameCount;
+            flipTimer = 0;
+            faceTransition.ResetFlip();
             faceTransition.Show(Session);
             IsPaused = false;
             Time.timeScale = 1;
