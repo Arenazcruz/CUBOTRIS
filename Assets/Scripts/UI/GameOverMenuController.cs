@@ -35,6 +35,7 @@ namespace Cubotris.UI
             bestScoreText.text = result.practice ? "—" : BestScoreStore.BestFor(result.mode).ToString();
             survivalTimeText.text = GameHudView.FormatTime(result.survivalSeconds);
             statusText.text = result.practice ? "Práctica terminada. No se guarda en la clasificación." : saved ? "Récord guardado." : BestScoreStore.History.Notice ?? "Escribe tu nombre para registrar esta partida.";
+            if(!string.IsNullOrEmpty(game.SaveNotice))statusText.text+="\n"+game.SaveNotice;
             transitioning = false; destination = Destination.None; actionFrame = Time.frameCount;
             retryButton.interactable = mainMenuButton.interactable = true;
             saveButton.interactable = playerNameInput.interactable = !saved;

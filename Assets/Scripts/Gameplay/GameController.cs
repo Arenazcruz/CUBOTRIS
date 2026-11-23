@@ -21,6 +21,9 @@ namespace Cubotris.Gameplay
         public int InputVersion { get; private set; }
         public bool AcceptsInput => isActiveAndEnabled && Model != null && !Model.IsGameOver && !IsPaused && !IsTransitioning && Time.frameCount != transitionFrame;
         public bool SoftDropHeld { get; set; }
+        public bool LeavingWithSave { get; set; }
+        public string SaveNotice { get; private set; }
+        private bool runClosed;
         private int lastRevision = -1;
         private bool skipGravityOnce;
         private int transitionFrame = -1;
@@ -28,13 +31,16 @@ namespace Cubotris.Gameplay
         private ScoreRecord finishedRecord;
         public ScoreRecord FinishedRecord => Model == null || !Model.IsGameOver ? null : (finishedRecord ??= new ScoreRecord
         {
-            id = System.Guid.NewGuid().ToString("N"), score = Model.Score, mode = Session.Mode, practice = Session.IsPractice,
+            id = Session.RunId, score = Model.Score, mode = Session.Mode, practice = Session.IsPractice,
             survivalSeconds = Session.SurvivalSeconds, finishedAtUtc = System.DateTimeOffset.UtcNow.ToString("O")
         }).Copy();
 
         private void Start()
         {
-            Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: GameSelection.Mode, practiceFace: GameSelection.PracticeFace);
+            var resumed=GameSave.TakeResume();
+            Session = resumed ?? new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: GameSelection.Mode, practiceFace: GameSelection.PracticeFace);
+            IsPaused=resumed!=null;Time.timeScale=IsPaused?0:1;
+            if(IsPaused)ResetInput();
             timedFrame = Time.frameCount;
             faceTransition.Show(Session);
             Refresh();
@@ -108,6 +114,8 @@ namespace Cubotris.Gameplay
 
         public void Restart()
         {
+            Abandon();
+            runClosed=false;SaveNotice=null;LeavingWithSave=false;
             finishedRecord = null;
             Session = new CubotrisSession(settings: fallSettings, garbageSettings: garbageSettings, mode: Session.Mode, practiceFace: Session.IsPractice?Session.ActiveFace:-1);
             timedFrame = Time.frameCount;
@@ -127,6 +135,14 @@ namespace Cubotris.Gameplay
             transitionFrame = Time.frameCount;
         }
 
+        public void Abandon()=>CloseRun();
+        private void CloseRun()
+        {
+            if(runClosed || Session==null)return;
+            runClosed=true;
+            if(!GameSave.Store.TryClose(Session.RunId,out string error))SaveNotice=error;
+        }
+
         private void OnDestroy() { Time.timeScale = 1; }
 
         private void Refresh()
@@ -134,7 +150,7 @@ namespace Cubotris.Gameplay
             if (lastRevision == Model.Revision) return;
             if (!IsTransitioning) boardView.Render(Model);
             // Freeze the timestamp and values when the run ends, before showing its form.
-            if (Model.IsGameOver) _ = FinishedRecord;
+            if (Model.IsGameOver){ _ = FinishedRecord;CloseRun(); }
             linesText.text = Model.LinesCleared.ToString("00");
             scoreText.text = Model.Score.ToString();
             stateText.text = Model.IsGameOver ? "PARTIDA TERMINADA" : IsPaused ? "EN PAUSA" : IsTransitioning ? "CAMBIANDO CARA" : "EN JUEGO";

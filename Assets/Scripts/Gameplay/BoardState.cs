@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Cubotris.Gameplay
 {
-    public sealed class BoardState
+    public sealed partial class BoardState
     {
         private readonly TetrominoType?[,] cells;
         private readonly Color?[,] blockColors;
