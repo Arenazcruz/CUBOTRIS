@@ -49,6 +49,10 @@ namespace Cubotris.Gameplay
         public int Score { get; private set; }
         public int LineScore { get; private set; }
         public int LastClearCount { get; private set; }
+        public int ComboChain { get; private set; }
+        public int MaxCombo { get; private set; }
+        public int LastComboBonus { get; private set; }
+        public int ComboBonusScore { get; private set; }
         public int PiecesLocked { get; private set; }
         public int Revision { get; private set; }
         public TetrominoType NextPiece => source.Peek();
@@ -177,6 +181,11 @@ namespace Cubotris.Gameplay
             int points = cleared switch { 1 => 100, 2 => 300, 3 => 500, 4 => 800, _ => 0 };
             LineScore += points;
             Score += points;
+            ComboChain = cleared > 0 ? ComboChain + 1 : 0;
+            MaxCombo = Math.Max(MaxCombo, ComboChain);
+            LastComboBonus = ComboChain > 1 ? 50 * (ComboChain - 1) : 0;
+            ComboBonusScore += LastComboBonus;
+            if (LastComboBonus > 0) AwardBonus(LastComboBonus);
             fallTime = 0;
             if (afterLock != null && !afterLock()) { EndGame(); return; }
             if (nextBoard != null) Board = nextBoard();

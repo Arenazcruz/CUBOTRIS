@@ -63,14 +63,14 @@ namespace Cubotris.Tests
                 lines += face + 1; score += points[face];
                 Assert.That(session.Game.LinesCleared, Is.EqualTo(lines));
                 Assert.That(session.Game.LineScore, Is.EqualTo(score));
-                Assert.That(session.Game.Score, Is.EqualTo(score+session.CycleBonusScore));
+                Assert.That(session.Game.Score, Is.EqualTo(score+session.CycleBonusScore+session.Game.ComboBonusScore));
                 Assert.That(Count(session.Faces[face]), Is.EqualTo(3 - face));
                 for (int other = 0; other < 4; other++)
                     if (other != face) Assert.That(Snapshot(session.Faces[other]), Is.EqualTo(before[other]));
                 Assert.That(session.Game.GravityInterval, Is.EqualTo(Mathf.Max(0.2f, Mathf.Pow(0.8f, lines))).Within(0.0001f));
             }
             Assert.That(session.Game.LineScore, Is.EqualTo(1700));
-            Assert.That(session.Game.Score, Is.EqualTo(2100));
+            Assert.That(session.Game.Score, Is.EqualTo(2400));
             Assert.That(session.Game.LinesCleared, Is.EqualTo(10));
         }
         [Test]
