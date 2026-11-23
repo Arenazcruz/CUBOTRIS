@@ -18,7 +18,7 @@ namespace Cubotris.Gameplay
             if(saving || !game.IsPaused || game.Model.IsGameOver || Time.frameCount==openedFrame)return;
             saving=true;
             if(!GameSave.Store.TrySave(game.Session,out string error)){message.text=error;saving=false;return;}
-            game.LeavingWithSave=true;Time.timeScale=1;SceneManager.LoadScene("MainMenu");
+            game.MarkSaved();Time.timeScale=1;SceneManager.LoadScene("MainMenu");
         }
     }
 }

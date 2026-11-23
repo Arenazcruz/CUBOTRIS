@@ -22,6 +22,8 @@ namespace Cubotris.Tests
         private int previousPracticeFace;
         private object previousSaveStore;
         private CubotrisSession previousResume;
+        private object previousStatsStore;
+        private static readonly System.Reflection.FieldInfo StatsStoreField=typeof(PersonalStats).GetField("store",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic);
         private static readonly System.Reflection.FieldInfo SaveStoreField=typeof(GameSave).GetField("store",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic);
         private object previousHistory;
         private string historyDirectory;
@@ -46,6 +48,7 @@ namespace Cubotris.Tests
             HistoryField.SetValue(null, new ScoreHistoryStore(System.IO.Path.Combine(historyDirectory, "records.json")));
             previousSaveStore=SaveStoreField.GetValue(null);previousResume=GameSave.ResumeSession;GameSave.ResumeSession=null;
             SaveStoreField.SetValue(null,new SaveSlotStore(System.IO.Path.Combine(historyDirectory,"continue.json")));
+            previousStatsStore=StatsStoreField.GetValue(null);StatsStoreField.SetValue(null,new StatisticsStore(System.IO.Path.Combine(historyDirectory,"statistics.json")));
             hadBestScore = PlayerPrefs.HasKey(BestScoreStore.Key);
             bestScoreBefore = PlayerPrefs.GetInt(BestScoreStore.Key);
             previousBackground = InputSystem.settings.backgroundBehavior;
@@ -73,6 +76,7 @@ namespace Cubotris.Tests
             if (live != null) Object.DestroyImmediate(live.gameObject);
             HistoryField.SetValue(null, previousHistory);
             SaveStoreField.SetValue(null,previousSaveStore);GameSave.ResumeSession=previousResume;
+            StatsStoreField.SetValue(null,previousStatsStore);
             if (System.IO.Directory.Exists(historyDirectory)) System.IO.Directory.Delete(historyDirectory, true);
             Restore(BestScoreStore.Key, hadBestScore, bestScoreBefore);
             PlayerPrefs.Save();
@@ -608,6 +612,8 @@ namespace Cubotris.Tests
                 Selected("Canvas/OptionsPanel/PanelBackground/BackButton");
                 yield return Tap(Key.Enter);
                 Selected("Canvas/MenuButtons/OptionsButton");
+                yield return Tap(Key.UpArrow);
+                Selected("Canvas/MenuButtons/StatisticsButton");
                 yield return Tap(Key.UpArrow);
                 Selected("Canvas/MenuButtons/RecordsButton");
                 yield return Tap(Key.UpArrow);
