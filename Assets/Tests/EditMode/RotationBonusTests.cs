@@ -12,7 +12,7 @@ namespace Cubotris.Tests
         {
             var session=new CubotrisSession();
             for(int i=0;i<3;i++){Clear(session);Assert.That(session.CycleClearMask,Is.EqualTo((1<<(i+1))-1));Assert.That(session.CycleBonusScore,Is.Zero);}
-            Clear(session);Assert.That(session.CycleBonusScore,Is.EqualTo(400));Assert.That(session.Game.Score,Is.EqualTo(800));Assert.That(session.Game.LineScore,Is.EqualTo(400));
+            Clear(session);Assert.That(session.CycleBonusScore,Is.EqualTo(400));Assert.That(session.Game.Score,Is.EqualTo(1100));Assert.That(session.Game.LineScore,Is.EqualTo(400));
             Assert.That(session.CompletedRotations,Is.EqualTo(1));Assert.That(session.CycleClearMask,Is.Zero);
             for(int i=0;i<4;i++)session.Game.HardDrop();Assert.That(session.CycleBonusScore,Is.EqualTo(400));Assert.That(session.LastRotationBonus,Is.Zero);
         }
