@@ -8595,7 +8595,7 @@ MonoBehaviour:
   grid: {fileID: 1026668368}
   faceText: {fileID: 426248589}
   duration: 0.45
-  slideDistance: 1.6
+  edgeOpacity: 0.35
   faceColors:
   - {r: 0.47, g: 0.9, b: 0.75, a: 1}
   - {r: 0.42, g: 0.75, b: 1, a: 1}

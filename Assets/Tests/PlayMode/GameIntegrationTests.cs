@@ -654,7 +654,7 @@ namespace Cubotris.Tests
                 Assert.That(Occupied(game.Session.Faces[face]), Is.EqualTo(4));
                 Assert.That(active.GetComponentsInChildren<SpriteRenderer>().Count(r => r.enabled), Is.Zero);
                 yield return new WaitForSeconds(0.08f);
-                Assert.That(board.transform.localPosition, Is.Not.EqualTo(origin), "The board must visibly slide");
+                Assert.That(board.transform.localPosition, Is.Not.EqualTo(origin), "The board must visibly spin");
                 Assert.That(board.GetComponentsInChildren<SpriteRenderer>().Any(r => r.enabled && r.color.a > 0 && r.color.a < 1), Is.True, "The board must visibly fade");
                 float deadline = Time.realtimeSinceStartup + 2;
                 while (game.IsTransitioning && Time.realtimeSinceStartup < deadline)
